@@ -70,7 +70,7 @@ jobs:
 
     - name: Get version from source
       id: get_version
-      shell: powershell
+      shell: pwsh
       run: |
         cd source
         if ("${{ github.event.inputs.version_tag }}" -ne "") {
@@ -93,14 +93,14 @@ jobs:
           poetry-${{ matrix.arch }}-${{ runner.os }}-
 
     - name: Install dependencies
-      shell: powershell
+      shell: pwsh
       run: |
         cd source
         poetry install --only=main
         poetry add pyinstaller --group dev
 
     - name: Build executable
-      shell: powershell
+      shell: pwsh
       run: |
         cd source
         # Create build directory
@@ -192,7 +192,7 @@ jobs:
         }
 
     - name: Prepare MSIX content
-      shell: powershell
+      shell: pwsh
       run: |
         # Create MSIX staging directory
         $stagingDir = "packaging/msix/staging/${{ matrix.arch }}"
@@ -213,7 +213,7 @@ jobs:
         Set-Content $manifestPath $manifest
 
     - name: Create MSIX package
-      shell: powershell
+      shell: pwsh
       run: |
         $stagingDir = "packaging/msix/staging/${{ matrix.arch }}"
         $outputDir = "packaging/msix/output"
@@ -251,7 +251,7 @@ jobs:
         path: artifacts
 
     - name: Create MSIX Bundle
-      shell: powershell
+      shell: pwsh
       run: |
         $bundleDir = "msix/bundle"
         New-Item -ItemType Directory -Force -Path $bundleDir
@@ -302,7 +302,7 @@ jobs:
         path: test-packages
 
     - name: Test bundle (PowerShell)
-      shell: powershell
+      shell: pwsh
       run: |
         $bundle = Get-ChildItem "test-packages/*.msixbundle" | Select-Object -First 1
         if (-not $bundle) {

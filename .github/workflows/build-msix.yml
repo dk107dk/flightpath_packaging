@@ -377,4 +377,5 @@ jobs:
           exit 1
         }
 
-        echo "📦 Package validation completed successfully"
+        echo "📦 Package validation is completed successfully"
+

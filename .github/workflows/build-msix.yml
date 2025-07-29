@@ -99,8 +99,8 @@ jobs:
       shell: pwsh
       run: |
         cd source
-        python -m poetry install --only=main
-        python -m poetry add pyinstaller --group dev
+        poetry install --only=main
+        poetry add pyinstaller --group dev
 
     - name: Build executable
       shell: pwsh

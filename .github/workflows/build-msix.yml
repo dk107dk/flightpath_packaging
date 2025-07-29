@@ -112,7 +112,7 @@ jobs:
         New-Item -ItemType Directory -Force -Path "dist/${{ matrix.arch }}"
 
         # Create a spec file based on your existing one but adapted for CI
-        $specContent = @"
+        $specContent = @'
 import os
 import sys
 # -*- mode: python ; coding: utf-8 -*-
@@ -172,7 +172,7 @@ coll = COLLECT(
     upx_exclude=[],
     name='${{ env.APP_NAME }}',
 )
-"@
+'@
 
         # Write the spec file
         Set-Content -Path "flightpath_ci.spec" -Value $specContent

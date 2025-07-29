@@ -173,7 +173,7 @@ jobs:
         $specLines | Out-File -FilePath "flightpath_ci.spec" -Encoding utf8
 
         # Run PyInstaller with the spec file
-        poetry run pyinstaller `
+        python -m poetry run pyinstaller `
           --distpath "dist/${{ matrix.arch }}" `
           --workpath "build/${{ matrix.arch }}" `
           --specpath "build/${{ matrix.arch }}" `

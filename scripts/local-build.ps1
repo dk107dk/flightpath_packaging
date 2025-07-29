@@ -14,7 +14,6 @@ if (-not (Test-Path $SourcePath)) {
 
 # Build steps similar to the GitHub Actions workflow
 # This helps you test locally before pushing to CI
-
 Push-Location $SourcePath
 try {
     # Install dependencies

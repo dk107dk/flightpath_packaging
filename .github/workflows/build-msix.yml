@@ -1,0 +1,380 @@
+name: Build Universal MSIX Package
+
+on:
+  workflow_dispatch:  # Manual trigger for now
+    inputs:
+      source_branch:
+        description: 'Branch from source repo to build'
+        required: false
+        default: 'main'
+      version_tag:
+        description: 'Version tag (optional - will use latest if not specified)'
+        required: false
+        default: ''
+
+  push:
+    branches: [ main ]
+    paths:
+      - 'msix/**'  # Only trigger on packaging changes
+
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly builds on Monday at 2 AM UTC
+
+env:
+  SOURCE_REPO: 'dk107dk/flightpath'
+  PYTHON_VERSION: '3.12'  # Adjust as needed
+  APP_NAME: 'FlightPath'
+
+jobs:
+  build-architectures:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: windows-latest
+            target: x64
+          - arch: arm64
+            runner: windows-arm64  # Now available!
+            target: arm64
+
+    runs-on: ${{ matrix.runner }}
+
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+    - name: Checkout packaging repo
+      uses: actions/checkout@v4
+      with:
+        path: packaging
+
+    - name: Checkout source repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ env.SOURCE_REPO }}
+        ref: ${{ github.event.inputs.source_branch || 'main' }}
+        path: source
+        token: ${{ secrets.GITHUB_TOKEN }}  # Use PAT if needed for private access
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        architecture: ${{ matrix.arch }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Get version from source
+      id: get_version
+      shell: powershell
+      run: |
+        cd source
+        if ("${{ github.event.inputs.version_tag }}" -ne "") {
+          $version = "${{ github.event.inputs.version_tag }}"
+          git checkout "tags/$version"
+        } else {
+          # Extract version from pyproject.toml
+          $content = Get-Content pyproject.toml -Raw
+          $version = [regex]::Match($content, 'version\s*=\s*"([^"]+)"').Groups[1].Value
+        }
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "Building version: $version"
+
+    - name: Cache Poetry dependencies
+      uses: actions/cache@v4
+      with:
+        path: source/.venv
+        key: poetry-${{ matrix.arch }}-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
+        restore-keys: |
+          poetry-${{ matrix.arch }}-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: powershell
+      run: |
+        cd source
+        poetry install --no-dev
+
+    - name: Install PyInstaller
+      shell: powershell
+      run: |
+        cd source
+        poetry add pyinstaller --group dev
+
+    - name: Build executable
+      shell: powershell
+      run: |
+        cd source
+        # Create build directory
+        New-Item -ItemType Directory -Force -Path "dist/${{ matrix.arch }}"
+
+        # Create a spec file based on your existing one but adapted for CI
+        $specContent = @"
+import os
+import sys
+# -*- mode: python ; coding: utf-8 -*-
+
+# Set paths for CI environment
+base_path = os.path.abspath('.')
+assets_path = os.path.join(base_path, 'flightpath', 'assets')
+icon_path = os.path.join(assets_path, 'icons', 'icon.ico')
+
+datas = []
+if os.path.exists(assets_path):
+    datas.append((assets_path, 'assets'))
+
+a = Analysis(
+    [os.path.join(base_path, 'flightpath', 'main.py')],
+    pathex=[base_path],
+    binaries=[],
+    datas=datas,
+    hiddenimports=[
+        'PySide6.QtCore',
+        'PySide6.QtWidgets',
+        'PySide6.QtGui'
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name='${{ env.APP_NAME }}',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    icon=icon_path if os.path.exists(icon_path) else None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='${{ env.APP_NAME }}',
+)
+"@
+
+        # Write the spec file
+        Set-Content -Path "flightpath_ci.spec" -Value $specContent
+
+        # Run PyInstaller with the spec file
+        poetry run pyinstaller `
+          --distpath "dist/${{ matrix.arch }}" `
+          --workpath "build/${{ matrix.arch }}" `
+          --specpath "build/${{ matrix.arch }}" `
+          flightpath_ci.spec
+
+        # Verify the build
+        if (Test-Path "dist/${{ matrix.arch }}/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe") {
+          echo "✅ Build successful for ${{ matrix.arch }}"
+          Get-ChildItem "dist/${{ matrix.arch }}/${{ env.APP_NAME }}" | Select-Object Name, Length
+        } else {
+          echo "❌ Build failed for ${{ matrix.arch }}"
+          # Debug: Show what was actually created
+          echo "Contents of dist/${{ matrix.arch }}:"
+          Get-ChildItem "dist/${{ matrix.arch }}" -Recurse | Select-Object FullName
+          exit 1
+        }
+
+    - name: Prepare MSIX content
+      shell: powershell
+      run: |
+        # Create MSIX staging directory
+        $stagingDir = "packaging/msix/staging/${{ matrix.arch }}"
+        New-Item -ItemType Directory -Force -Path $stagingDir
+
+        # Copy built application
+        Copy-Item -Recurse "source/dist/${{ matrix.arch }}/${{ env.APP_NAME }}/*" $stagingDir
+
+        # Copy manifest and assets
+        Copy-Item "packaging/msix/manifest/AppxManifest.xml" "$stagingDir/"
+        Copy-Item -Recurse "packaging/msix/assets" "$stagingDir/"
+
+        # Update manifest with correct architecture and version
+        $manifestPath = "$stagingDir/AppxManifest.xml"
+        $manifest = Get-Content $manifestPath -Raw
+        $manifest = $manifest -replace 'ProcessorArchitecture=".*?"', 'ProcessorArchitecture="${{ matrix.target }}"'
+        $manifest = $manifest -replace 'Version=".*?"', 'Version="${{ steps.get_version.outputs.version }}.0"'
+        Set-Content $manifestPath $manifest
+
+    - name: Create MSIX package
+      shell: powershell
+      run: |
+        $stagingDir = "packaging/msix/staging/${{ matrix.arch }}"
+        $outputDir = "packaging/msix/output"
+        New-Item -ItemType Directory -Force -Path $outputDir
+
+        # Use MakeAppx to create the package
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
+          /d $stagingDir `
+          /p "$outputDir/${{ env.APP_NAME }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.msix" `
+          /l /o
+
+        if ($LASTEXITCODE -eq 0) {
+          echo "✅ MSIX package created successfully for ${{ matrix.arch }}"
+        } else {
+          echo "❌ MSIX packaging failed for ${{ matrix.arch }}"
+          exit 1
+        }
+
+    - name: Upload architecture-specific artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: msix-${{ matrix.arch }}
+        path: packaging/msix/output/*.msix
+        retention-days: 30
+
+  create-universal-package:
+    needs: build-architectures
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout packaging repo
+      uses: actions/checkout@v4
+
+    - name: Download all architecture artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create universal MSIX package
+      shell: powershell
+      run: |
+        # Create universal staging directory
+        $universalDir = "msix/staging/universal"
+        New-Item -ItemType Directory -Force -Path $universalDir
+
+        # Extract x64 package as base
+        $x64Package = Get-ChildItem "artifacts/msix-x64/*.msix" | Select-Object -First 1
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" unpack `
+          /p $x64Package.FullName `
+          /d "$universalDir/x64" `
+          /l /o
+
+        # Extract ARM64 package
+        $arm64Package = Get-ChildItem "artifacts/msix-arm64/*.msix" | Select-Object -First 1
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" unpack `
+          /p $arm64Package.FullName `
+          /d "$universalDir/arm64" `
+          /l /o
+
+        # Create universal structure
+        New-Item -ItemType Directory -Force -Path "$universalDir/final"
+
+        # Copy shared assets from x64 version
+        Copy-Item "$universalDir/x64/assets" "$universalDir/final/" -Recurse
+        Copy-Item "$universalDir/x64/AppxManifest.xml" "$universalDir/final/"
+
+        # Create architecture-specific subdirectories
+        New-Item -ItemType Directory -Force -Path "$universalDir/final/x64"
+        New-Item -ItemType Directory -Force -Path "$universalDir/final/arm64"
+
+        # Copy executables to arch-specific folders
+        Copy-Item "$universalDir/x64/${{ env.APP_NAME }}.exe" "$universalDir/final/x64/"
+        Copy-Item "$universalDir/x64/*.dll" "$universalDir/final/x64/" -ErrorAction SilentlyContinue
+        Copy-Item "$universalDir/arm64/${{ env.APP_NAME }}.exe" "$universalDir/final/arm64/"
+        Copy-Item "$universalDir/arm64/*.dll" "$universalDir/final/arm64/" -ErrorAction SilentlyContinue
+
+        # Update manifest for universal package
+        $manifestPath = "$universalDir/final/AppxManifest.xml"
+        $manifest = Get-Content $manifestPath -Raw
+        $manifest = $manifest -replace 'ProcessorArchitecture=".*?"', 'ProcessorArchitecture="neutral"'
+        Set-Content $manifestPath $manifest
+
+        # Create final universal package
+        $outputDir = "msix/output"
+        New-Item -ItemType Directory -Force -Path $outputDir
+
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
+          /d "$universalDir/final" `
+          /p "$outputDir/${{ env.APP_NAME }}-Universal-${{ needs.build-architectures.outputs.version }}.msix" `
+          /l /o
+
+        if ($LASTEXITCODE -eq 0) {
+          echo "✅ Universal MSIX package created successfully"
+        } else {
+          echo "❌ Universal MSIX packaging failed"
+          exit 1
+        }
+
+    - name: Upload universal package
+      uses: actions/upload-artifact@v3
+      with:
+        name: msix-universal
+        path: msix/output/*Universal*.msix
+        retention-days: 90
+
+    - name: Upload individual packages (backup)
+      uses: actions/upload-artifact@v3
+      with:
+        name: msix-individual-packages
+        path: artifacts/msix-*/*.msix
+        retention-days: 90
+
+  test-packages:
+    needs: [build-architectures, create-universal-package]
+    runs-on: windows-latest
+
+    steps:
+    - name: Download universal package
+      uses: actions/download-artifact@v3
+      with:
+        name: msix-universal
+        path: test-packages
+
+    - name: Test package installation (PowerShell)
+      shell: powershell
+      run: |
+        # Basic validation that the package is well-formed
+        $package = Get-ChildItem "test-packages/*.msix" | Select-Object -First 1
+
+        # Use PowerShell to inspect the package
+        try {
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
+
+          $manifest = $zip.Entries | Where-Object { $_.Name -eq "AppxManifest.xml" }
+          if ($manifest) {
+            echo "✅ Package contains valid manifest"
+
+            # Check for required executables
+            $x64Exe = $zip.Entries | Where-Object { $_.FullName -like "*x64*/*.exe" }
+            $arm64Exe = $zip.Entries | Where-Object { $_.FullName -like "*arm64*/*.exe" }
+
+            if ($x64Exe -and $arm64Exe) {
+              echo "✅ Package contains both x64 and ARM64 executables"
+            } else {
+              echo "⚠️  Package may be missing architecture-specific executables"
+            }
+          } else {
+            echo "❌ Package is missing manifest"
+            exit 1
+          }
+
+          $zip.Dispose()
+        } catch {
+          echo "❌ Package validation failed: $_"
+          exit 1
+        }
+
+        echo "📦 Package validation completed successfully"

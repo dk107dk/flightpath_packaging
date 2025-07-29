@@ -178,7 +178,6 @@ jobs:
         poetry run python -m PyInstaller `
           --distpath "dist/${{ matrix.arch }}" `
           --workpath "build/${{ matrix.arch }}" `
-          --specpath "build/${{ matrix.arch }}" `
           flightpath_ci.spec
 
         # Verify the build

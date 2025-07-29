@@ -1,22 +1,4 @@
-- name: Install Poetry
-      shell: powershell
-      run: |
-        # Install Poetry using the official installer
-        (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-
-        # Add Poetry to PATH for this session
-        $env:PATH += ";$env:APPDATA\Python\Scripts"
-        echo "$env:APPDATA\Python\Scripts" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-        # Verify installation
-        poetry --version
-
-    - name: Configure Poetry
-      shell: powershell
-      run: |
-        cd source
-        poetry config virtualenvs.create true
-        poetry config virtualenvs.in-project truename: Build Universal MSIX Package
+name: Build Universal MSIX Package
 
 on:
   workflow_dispatch:  # Manual trigger for now
@@ -257,137 +239,101 @@ jobs:
         path: packaging/msix/output/*.msix
         retention-days: 30
 
-  create-universal-package:
+  create-universal-bundle:
+    name: Create Universal MSIX Bundle
     needs: build-architectures
     runs-on: windows-latest
 
     steps:
-    - name: Checkout packaging repo
-      uses: actions/checkout@v4
-
     - name: Download all architecture artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts
 
-    - name: Create universal MSIX package
+    - name: Create MSIX Bundle
       shell: powershell
       run: |
-        # Create universal staging directory
-        $universalDir = "msix/staging/universal"
-        New-Item -ItemType Directory -Force -Path $universalDir
+        $bundleDir = "msix/bundle"
+        New-Item -ItemType Directory -Force -Path $bundleDir
 
-        # Extract x64 package as base
-        $x64Package = Get-ChildItem "artifacts/msix-x64/*.msix" | Select-Object -First 1
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" unpack `
-          /p $x64Package.FullName `
-          /d "$universalDir/x64" `
-          /l /o
+        $msixFiles = Get-ChildItem -Path "artifacts" -Recurse -Filter "*.msix"
+        $msixFiles | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $bundleDir
+        }
 
-        # Extract ARM64 package
-        $arm64Package = Get-ChildItem "artifacts/msix-arm64/*.msix" | Select-Object -First 1
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" unpack `
-          /p $arm64Package.FullName `
-          /d "$universalDir/arm64" `
-          /l /o
+        # Extract version from one of the file names
+        $oneMsix = $msixFiles | Select-Object -First 1
+        $version = ($oneMsix.Name -split '-')[-1].Replace('.msix', '')
 
-        # Create universal structure
-        New-Item -ItemType Directory -Force -Path "$universalDir/final"
-
-        # Copy shared assets from x64 version
-        Copy-Item "$universalDir/x64/assets" "$universalDir/final/" -Recurse
-        Copy-Item "$universalDir/x64/AppxManifest.xml" "$universalDir/final/"
-
-        # Create architecture-specific subdirectories
-        New-Item -ItemType Directory -Force -Path "$universalDir/final/x64"
-        New-Item -ItemType Directory -Force -Path "$universalDir/final/arm64"
-
-        # Copy executables to arch-specific folders
-        Copy-Item "$universalDir/x64/${{ env.APP_NAME }}.exe" "$universalDir/final/x64/"
-        Copy-Item "$universalDir/x64/*.dll" "$universalDir/final/x64/" -ErrorAction SilentlyContinue
-        Copy-Item "$universalDir/arm64/${{ env.APP_NAME }}.exe" "$universalDir/final/arm64/"
-        Copy-Item "$universalDir/arm64/*.dll" "$universalDir/final/arm64/" -ErrorAction SilentlyContinue
-
-        # Update manifest for universal package
-        $manifestPath = "$universalDir/final/AppxManifest.xml"
-        $manifest = Get-Content $manifestPath -Raw
-        $manifest = $manifest -replace 'ProcessorArchitecture=".*?"', 'ProcessorArchitecture="neutral"'
-        Set-Content $manifestPath $manifest
-
-        # Create final universal package
         $outputDir = "msix/output"
         New-Item -ItemType Directory -Force -Path $outputDir
 
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
-          /d "$universalDir/final" `
-          /p "$outputDir/${{ env.APP_NAME }}-Universal-${{ needs.build-architectures.outputs.version }}.msix" `
+        $bundlePath = "$outputDir/${{ env.APP_NAME }}-Universal-$version.msixbundle"
+
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" bundle `
+          /d $bundleDir `
+          /p $bundlePath `
           /l /o
 
         if ($LASTEXITCODE -eq 0) {
-          echo "✅ Universal MSIX package created successfully"
+          echo "✅ Universal MSIX bundle created successfully"
         } else {
-          echo "❌ Universal MSIX packaging failed"
+          echo "❌ Universal MSIX bundle creation failed"
           exit 1
         }
 
-    - name: Upload universal package
-      uses: actions/upload-artifact@v3
+    - name: Upload universal bundle
+      uses: actions/upload-artifact@v4
       with:
-        name: msix-universal
-        path: msix/output/*Universal*.msix
+        name: msix-universal-bundle
+        path: msix/output/*.msixbundle
         retention-days: 90
 
-    - name: Upload individual packages (backup)
-      uses: actions/upload-artifact@v3
-      with:
-        name: msix-individual-packages
-        path: artifacts/msix-*/*.msix
-        retention-days: 90
-
-  test-packages:
-    needs: [build-architectures, create-universal-package]
+  test-bundle:
+    name: Test Universal MSIX Bundle
+    needs: create-universal-bundle
     runs-on: windows-latest
 
     steps:
-    - name: Download universal package
-      uses: actions/download-artifact@v3
+    - name: Download universal bundle
+      uses: actions/download-artifact@v4
       with:
-        name: msix-universal
+        name: msix-universal-bundle
         path: test-packages
 
-    - name: Test package installation (PowerShell)
+    - name: Test bundle (PowerShell)
       shell: powershell
       run: |
-        # Basic validation that the package is well-formed
-        $package = Get-ChildItem "test-packages/*.msix" | Select-Object -First 1
-
-        # Use PowerShell to inspect the package
-        try {
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
-
-          $manifest = $zip.Entries | Where-Object { $_.Name -eq "AppxManifest.xml" }
-          if ($manifest) {
-            echo "✅ Package contains valid manifest"
-
-            # Check for required executables
-            $x64Exe = $zip.Entries | Where-Object { $_.FullName -like "*x64*/*.exe" }
-            $arm64Exe = $zip.Entries | Where-Object { $_.FullName -like "*arm64*/*.exe" }
-
-            if ($x64Exe -and $arm64Exe) {
-              echo "✅ Package contains both x64 and ARM64 executables"
-            } else {
-              echo "⚠️  Package may be missing architecture-specific executables"
-            }
-          } else {
-            echo "❌ Package is missing manifest"
+        $bundle = Get-ChildItem "test-packages/*.msixbundle" | Select-Object -First 1
+        if (-not $bundle) {
+            echo "❌ No MSIX bundle found to test."
             exit 1
-          }
+        }
+        echo "Testing bundle: $($bundle.FullName)"
 
-          $zip.Dispose()
-        } catch {
-          echo "❌ Package validation failed: $_"
-          exit 1
+        # A simple test could be to unpack it and check for the architecture packages
+        $unpackDir = "unpacked_bundle"
+        New-Item -ItemType Directory -Force -Path $unpackDir
+
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" unpack `
+          /p $bundle.FullName `
+          /d $unpackDir `
+          /l /o
+        
+        if ($LASTEXITCODE -ne 0) {
+            echo "❌ Failed to unpack the bundle."
+            exit 1
         }
 
-        echo "📦 Package validation completed successfully"
+        $x64Package = Get-ChildItem "$unpackDir/*_x64.msix"
+        $arm64Package = Get-ChildItem "$unpackDir/*_arm64.msix"
+
+        if ($x64Package -and $arm64Package) {
+            echo "✅ Bundle contains both x64 and ARM64 packages."
+        } else {
+            echo "❌ Bundle is missing one or more architecture-specific packages."
+            Get-ChildItem $unpackDir
+            exit 1
+        }
+
+        echo "📦 Bundle validation completed successfully"

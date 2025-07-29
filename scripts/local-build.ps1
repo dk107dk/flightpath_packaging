@@ -19,6 +19,7 @@ Push-Location $SourcePath
 try {
     # Install dependencies
     poetry install
+    #
     # Build executable
     poetry run pyinstaller --name "FlightPath" --windowed --onedir flightpath/main.py
 

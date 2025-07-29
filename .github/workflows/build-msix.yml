@@ -112,70 +112,70 @@ jobs:
         New-Item -ItemType Directory -Force -Path "dist/${{ matrix.arch }}"
 
         # Create a spec file based on your existing one but adapted for CI
-        $specContent = @'
-import os
-import sys
-# -*- mode: python ; coding: utf-8 -*-
-
-# Set paths for CI environment
-base_path = os.path.abspath('.')
-assets_path = os.path.join(base_path, 'flightpath', 'assets')
-icon_path = os.path.join(assets_path, 'icons', 'icon.ico')
-
-datas = []
-if os.path.exists(assets_path):
-    datas.append((assets_path, 'assets'))
-
-a = Analysis(
-    [os.path.join(base_path, 'flightpath', 'main.py')],
-    pathex=[base_path],
-    binaries=[],
-    datas=datas,
-    hiddenimports=[
-        'PySide6.QtCore',
-        'PySide6.QtWidgets',
-        'PySide6.QtGui'
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    noarchive=False,
-    optimize=0,
-)
-
-pyz = PYZ(a.pure)
-
-exe = EXE(
-    pyz,
-    a.scripts,
-    [],
-    exclude_binaries=True,
-    name='${{ env.APP_NAME }}',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
-    disable_windowed_traceback=False,
-    icon=icon_path if os.path.exists(icon_path) else None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='${{ env.APP_NAME }}',
-)
-'@
+        $specLines = @(
+          "import os",
+          "import sys",
+          "# -*- mode: python ; coding: utf-8 -*-",
+          "",
+          "# Set paths for CI environment",
+          "base_path = os.path.abspath('.')",
+          "assets_path = os.path.join(base_path, 'flightpath', 'assets')",
+          "icon_path = os.path.join(assets_path, 'icons', 'icon.ico')",
+          "",
+          "datas = []",
+          "if os.path.exists(assets_path):",
+          "    datas.append((assets_path, 'assets'))",
+          "",
+          "a = Analysis(",
+          "    [os.path.join(base_path, 'flightpath', 'main.py')],",
+          "    pathex=[base_path],",
+          "    binaries=[],",
+          "    datas=datas,",
+          "    hiddenimports=[",
+          "        'PySide6.QtCore',",
+          "        'PySide6.QtWidgets',",
+          "        'PySide6.QtGui'",
+          "    ],",
+          "    hookspath=[],",
+          "    hooksconfig={},",
+          "    runtime_hooks=[],",
+          "    excludes=[],",
+          "    noarchive=False,",
+          "    optimize=0,",
+          ")",
+          "",
+          "pyz = PYZ(a.pure)",
+          "",
+          "exe = EXE(",
+          "    pyz,",
+          "    a.scripts,",
+          "    [],",
+          "    exclude_binaries=True,",
+          "    name='${{ env.APP_NAME }}',",
+          "    debug=False,",
+          "    bootloader_ignore_signals=False,",
+          "    strip=False,",
+          "    upx=True,",
+          "    upx_exclude=[],",
+          "    runtime_tmpdir=None,",
+          "    console=False,",
+          "    disable_windowed_traceback=False,",
+          "    icon=icon_path if os.path.exists(icon_path) else None,",
+          ")",
+          "",
+          "coll = COLLECT(",
+          "    exe,",
+          "    a.binaries,",
+          "    a.datas,",
+          "    strip=False,",
+          "    upx=True,",
+          "    upx_exclude=[],",
+          "    name='${{ env.APP_NAME }}',",
+          ")"
+        )
 
         # Write the spec file
-        Set-Content -Path "flightpath_ci.spec" -Value $specContent
+        $specLines | Out-File -FilePath "flightpath_ci.spec" -Encoding utf8
 
         # Run PyInstaller with the spec file
         poetry run pyinstaller `

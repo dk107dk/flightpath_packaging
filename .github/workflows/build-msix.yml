@@ -220,6 +220,13 @@ jobs:
         $manifestPath = "$ws/packaging/msix/staging/${{ matrix.arch }}/AppxManifest.xml"
         Get-Content $manifestPath
 
+    - name: Display Manifest for Debugging
+      shell: pwsh
+      run: |
+        $ws = $env:GITHUB_WORKSPACE
+        $manifestPath = "$ws/packaging/msix/staging/${{ matrix.arch }}/AppxManifest.xml"
+        Get-Content $manifestPath
+
     - name: Create MSIX package
       shell: pwsh
       run: |

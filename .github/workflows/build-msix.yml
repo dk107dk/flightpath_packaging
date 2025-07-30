@@ -209,7 +209,7 @@ jobs:
         # Update manifest with correct architecture and version
         $manifestPath = "$stagingDir/AppxManifest.xml"
         [xml]$manifest = Get-Content $manifestPath
-        $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}"
+        $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
         $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "${{ matrix.target }}")
         $manifest.Save($manifestPath)
 

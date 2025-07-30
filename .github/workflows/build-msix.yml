@@ -213,6 +213,13 @@ jobs:
         $manifest = $manifest -replace 'Version=".*?"', 'Version="${{ steps.get_version.outputs.version }}.0"'
         [System.IO.File]::WriteAllText($manifestPath, $manifest, [System.Text.UTF8Encoding]::new($false))
 
+    - name: Display Manifest for Debugging
+      shell: pwsh
+      run: |
+        $ws = $env:GITHUB_WORKSPACE
+        $manifestPath = "$ws/packaging/msix/staging/${{ matrix.arch }}/AppxManifest.xml"
+        Get-Content $manifestPath
+
     - name: Create MSIX package
       shell: pwsh
       run: |

@@ -216,10 +216,10 @@ jobs:
 
     - name: Create MSIX package
       shell: pwsh
-      working-directory: ./packaging
       run: |
-        $stagingDir = "msix/staging/${{ matrix.arch }}"
-        $outputDir = "msix/output"
+        $ws = $env:GITHUB_WORKSPACE
+        $stagingDir = "$ws/packaging/msix/staging/${{ matrix.arch }}"
+        $outputDir = "$ws/packaging/msix/output"
         New-Item -ItemType Directory -Force -Path $outputDir
 
         # Use MakeAppx to create the package

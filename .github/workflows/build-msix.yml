@@ -192,31 +192,26 @@ jobs:
           exit 1
         }
 
-    - name: List files in the workspace
-      run: |
-        Get-ChildItem -Recurse
-
     - name: Prepare MSIX content
       shell: pwsh
-      working-directory: ./packaging
       run: |
-        # Create MSIX staging directory
-        $stagingDir = "msix/staging/${{ matrix.arch }}"
+        $ws = $env:GITHUB_WORKSPACE
+        $stagingDir = "$ws/packaging/msix/staging/${{ matrix.arch }}"
         New-Item -ItemType Directory -Force -Path $stagingDir
 
         # Copy built application
-        Copy-Item -Recurse "../source/dist/${{ matrix.arch }}/${{ env.APP_NAME }}/*" $stagingDir
+        Copy-Item -Recurse "$ws/source/dist/${{ matrix.arch }}/${{ env.APP_NAME }}/*" $stagingDir
 
         # Copy manifest and assets
-        Copy-Item "msix/manifest/AppxManifest.xml" "$stagingDir/"
-        Copy-Item -Recurse "msix/assets" "$stagingDir/"
+        Copy-Item "$ws/packaging/msix/manifest/AppxManifest.xml" "$stagingDir/"
+        Copy-Item -Recurse "$ws/packaging/msix/assets" "$stagingDir/"
 
         # Update manifest with correct architecture and version
         $manifestPath = "$stagingDir/AppxManifest.xml"
         $manifest = Get-Content $manifestPath -Raw
         $manifest = $manifest -replace 'ProcessorArchitecture=".*?"', 'ProcessorArchitecture="${{ matrix.target }}"'
         $manifest = $manifest -replace 'Version=".*?"', 'Version="${{ steps.get_version.outputs.version }}.0"'
-        Set-Content $manifestPath $manifest
+        [System.IO.File]::WriteAllLines($manifestPath, $manifest, [System.Text.UTF8Encoding]::new($false))
 
     - name: Create MSIX package
       shell: pwsh

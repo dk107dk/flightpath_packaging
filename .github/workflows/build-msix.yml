@@ -210,7 +210,7 @@ jobs:
         $manifestPath = "$stagingDir/AppxManifest.xml"
         [xml]$manifest = Get-Content $manifestPath
         $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
-        $manifest.Package.Identity.ProcessorArchitecture = "${{ matrix.target }}"
+        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "${{ matrix.target }}")
         $manifest.Save($manifestPath)
 
     - name: Display Manifest for Debugging

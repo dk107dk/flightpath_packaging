@@ -211,7 +211,7 @@ jobs:
         $manifest = Get-Content $manifestPath -Raw
         $manifest = $manifest -replace 'ProcessorArchitecture=".*?"', 'ProcessorArchitecture="${{ matrix.target }}"'
         $manifest = $manifest -replace 'Version=".*?"', 'Version="${{ steps.get_version.outputs.version }}.0"'
-        [System.IO.File]::WriteAllLines($manifestPath, $manifest, [System.Text.UTF8Encoding]::new($false))
+        [System.IO.File]::WriteAllText($manifestPath, $manifest, [System.Text.UTF8Encoding]::new($false))
 
     - name: Create MSIX package
       shell: pwsh

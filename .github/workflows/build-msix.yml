@@ -208,10 +208,10 @@ jobs:
 
         # Update manifest with correct architecture and version
         $manifestPath = "$stagingDir/AppxManifest.xml"
-        $manifest = Get-Content $manifestPath -Raw
-        $manifest = $manifest -replace 'Version=".*?"', "Version=\"${{ steps.get_version.outputs.version }}.0\""
-        $manifest = $manifest -replace 'ProcessorArchitecture=".*?"', 'ProcessorArchitecture="${{ matrix.target }}"'
-        [System.IO.File]::WriteAllText($manifestPath, $manifest, [System.Text.UTF8Encoding]::new($false))
+        [xml]$manifest = Get-Content $manifestPath
+        $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
+        $manifest.Package.Identity.ProcessorArchitecture = "${{ matrix.target }}"
+        $manifest.Save($manifestPath)
 
     - name: Display Manifest for Debugging
       shell: pwsh

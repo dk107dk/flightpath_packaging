@@ -23,6 +23,7 @@
     <Capability Name="internetClient" />
     <uap:Capability Name="documentsLibrary" />
     <uap:Capability Name="removableStorage" />
+    <rescap:Capability Name="runFullTrust" />
   </Capabilities>
   <Applications>
     <Application Id="App"

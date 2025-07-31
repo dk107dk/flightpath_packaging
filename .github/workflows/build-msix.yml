@@ -38,6 +38,7 @@ jobs:
             target: arm64
 
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120  # Set reasonable timeout
 
     outputs:
       version: ${{ steps.get_version.outputs.version }}
@@ -98,14 +99,46 @@ jobs:
         path: |
           ${{ steps.pip-cache.outputs.dir }}
           source/.venv
-        key: poetry-${{ matrix.arch }}-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
+          ~/.cache/pypoetry
+        key: poetry-${{ matrix.arch }}-${{ runner.os }}-${{ hashFiles('source/poetry.lock', 'source/pyproject.toml') }}
         restore-keys: |
           poetry-${{ matrix.arch }}-${{ runner.os }}-
+          poetry-${{ runner.os }}-
 
-    - name: Overwrite poetry.lock
+    - name: Set up cross-compilation environment
+      if: matrix.arch == 'arm64'
       shell: pwsh
       run: |
-        Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
+        # Set environment variables for cross-compilation
+        echo "DISTUTILS_USE_SDK=1" >> $env:GITHUB_ENV
+        echo "MSSdk=1" >> $env:GITHUB_ENV
+        echo "VCPKG_DEFAULT_TRIPLET=arm64-windows" >> $env:GITHUB_ENV
+        echo "CMAKE_GENERATOR_PLATFORM=ARM64" >> $env:GITHUB_ENV
+
+    - name: Install system dependencies (ARM64)
+      if: matrix.arch == 'arm64'
+      shell: pwsh
+      run: |
+        # Install vcpkg for native dependencies
+        git clone https://github.com/Microsoft/vcpkg.git
+        .\vcpkg\bootstrap-vcpkg.bat
+        .\vcpkg\vcpkg.exe install grpc:arm64-windows protobuf:arm64-windows
+
+    - name: Overwrite poetry.lock with architecture-specific version
+      shell: pwsh
+      run: |
+        $lockFile = if ("${{ matrix.arch }}" -eq "arm64") {
+          "$env:GITHUB_WORKSPACE/packaging/poetry-arm64.lock"
+        } else {
+          "$env:GITHUB_WORKSPACE/packaging/poetry.lock"
+        }
+
+        if (Test-Path $lockFile) {
+          Copy-Item -Path $lockFile -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
+        } else {
+          Write-Warning "Lock file not found: $lockFile, using default"
+          Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
+        }
 
     - name: Set up MSVC developer command prompt
       if: matrix.arch == 'arm64'
@@ -113,11 +146,52 @@ jobs:
       with:
         arch: arm64
 
-    - name: Install dependencies
+    - name: Install dependencies with ARM64 optimizations
+      shell: pwsh
+      timeout-minutes: 45
+      run: |
+        cd source
+
+        if ("${{ matrix.arch }}" -eq "arm64") {
+          Write-Host "Installing dependencies for ARM64 with optimizations..."
+
+          # Set build parallelism
+          $env:NPY_NUM_BUILD_JOBS = [Environment]::ProcessorCount
+          $env:MAKEFLAGS = "-j$([Environment]::ProcessorCount)"
+
+          # Try to install with binary wheels first
+          poetry run pip install --only-binary=:all: --upgrade pip wheel setuptools
+
+          # Install dependencies, falling back to source builds only when necessary
+          try {
+            poetry install --only-binary=:all:
+          } catch {
+            Write-Host "Binary-only installation failed, allowing source builds for essential packages..."
+            # Allow source builds for specific packages that commonly need it
+            poetry run pip install --no-binary grpcio,cryptography,numpy poetry
+            poetry install
+          }
+        } else {
+          # Standard x64 installation
+          poetry install
+        }
+
+    - name: Verify critical dependencies
       shell: pwsh
       run: |
         cd source
-        poetry install
+        poetry run python -c "
+        import sys
+        critical_packages = ['grpcio', 'PySide6', 'cryptography']
+        for pkg in critical_packages:
+            try:
+                __import__(pkg)
+                print(f'✅ {pkg} imported successfully')
+            except ImportError as e:
+                print(f'❌ {pkg} failed to import: {e}')
+                sys.exit(1)
+        print('All critical packages verified')
+        "
 
     - name: Build executable
       shell: pwsh
@@ -208,6 +282,27 @@ jobs:
           echo "Contents of dist/${{ matrix.arch }}:"
           Get-ChildItem "dist/${{ matrix.arch }}" -Recurse | Select-Object FullName
           exit 1
+        }
+
+    - name: Debug build environment
+      if: failure() && matrix.arch == 'arm64'
+      shell: pwsh
+      run: |
+        Write-Host "=== Environment Info ==="
+        python --version
+        pip --version
+        poetry --version
+
+        Write-Host "=== Installed Packages ==="
+        cd source
+        poetry show
+
+        Write-Host "=== Build Logs ==="
+        if (Test-Path "build/") {
+          Get-ChildItem build/ -Recurse -Filter "*.log" | ForEach-Object {
+            Write-Host "--- $($_.FullName) ---"
+            Get-Content $_.FullName | Select-Object -Last 50
+          }
         }
 
     - name: Prepare MSIX content
@@ -335,7 +430,7 @@ jobs:
         $unpackDir = "unpacked_bundle"
         New-Item -ItemType Directory -Force -Path $unpackDir
 
-        $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\${{ matrix.arch }}\makeappx.exe"
+        $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe"
         & $makeappx unpack `
           /p $bundle.FullName `
           /d $unpackDir `

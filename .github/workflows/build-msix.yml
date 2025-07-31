@@ -87,13 +87,25 @@ jobs:
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "Building version: $version"
 
-    - name: Cache Poetry dependencies
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"
+
+    - name: Cache Poetry and pip dependencies
       uses: actions/cache@v4
       with:
-        path: source/.venv
+        path: |
+          ${{ steps.pip-cache.outputs.dir }}
+          source/.venv
         key: poetry-${{ matrix.arch }}-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
         restore-keys: |
           poetry-${{ matrix.arch }}-${{ runner.os }}-
+
+    - name: Overwrite poetry.lock
+      shell: pwsh
+      run: |
+        Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
 
     - name: Set up MSVC developer command prompt
       if: matrix.arch == 'arm64'

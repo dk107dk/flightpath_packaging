@@ -95,6 +95,12 @@ jobs:
         restore-keys: |
           poetry-${{ matrix.arch }}-${{ runner.os }}-
 
+    - name: Set up MSVC developer command prompt
+      if: matrix.arch == 'arm64'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: arm64
+
     - name: Install dependencies
       shell: pwsh
       run: |

@@ -317,7 +317,8 @@ jobs:
         $unpackDir = "unpacked_bundle"
         New-Item -ItemType Directory -Force -Path $unpackDir
 
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" unpack `
+        $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\${{ matrix.arch }}\makeappx.exe"
+        & $makeappx unpack `
           /p $bundle.FullName `
           /d $unpackDir `
           /l /o

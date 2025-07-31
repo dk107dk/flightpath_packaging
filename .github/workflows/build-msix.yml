@@ -23,7 +23,7 @@ on:
 env:
   SOURCE_REPO: 'dk107dk/flightpath'
   PYTHON_VERSION: '3.12'  # Adjust as needed
-  APP_NAME: 'FlightPath'
+  APP_NAME: 'FlightPathData'
 
 jobs:
   build-architectures:

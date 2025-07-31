@@ -159,17 +159,38 @@ jobs:
           $env:NPY_NUM_BUILD_JOBS = [Environment]::ProcessorCount
           $env:MAKEFLAGS = "-j$([Environment]::ProcessorCount)"
 
-          # Try to install with binary wheels first
-          poetry run pip install --only-binary=:all: --upgrade pip wheel setuptools
+          # Upgrade pip and basic tools first
+          poetry run pip install --upgrade pip wheel setuptools
 
-          # Install dependencies, falling back to source builds only when necessary
+          # Configure pip to prefer binary wheels
+          poetry run pip config set global.prefer-binary true
+
+          # Try different installation strategies for ARM64
+          Write-Host "Attempting strategy 1: Standard Poetry install..."
           try {
-            poetry install --only-binary=:all:
-          } catch {
-            Write-Host "Binary-only installation failed, allowing source builds for essential packages..."
-            # Allow source builds for specific packages that commonly need it
-            poetry run pip install --no-binary grpcio,cryptography,numpy poetry
             poetry install
+            Write-Host "✅ Standard installation succeeded"
+          } catch {
+            Write-Host "❌ Standard installation failed, trying fallback strategies..."
+
+            Write-Host "Attempting strategy 2: Install problematic packages individually with binary preference..."
+            # Install known problematic packages first with pip directly
+            $problematicPackages = @('grpcio', 'cryptography', 'numpy', 'lxml')
+            foreach ($pkg in $problematicPackages) {
+              Write-Host "Installing $pkg..."
+              poetry run pip install --only-binary=:all: $pkg 2>$null
+              if ($LASTEXITCODE -ne 0) {
+                Write-Host "Binary wheel not available for $pkg, allowing source build..."
+                poetry run pip install $pkg
+              }
+            }
+
+            # Try poetry install again
+            poetry install --no-dev
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "❌ All strategies failed"
+              exit 1
+            }
           }
         } else {
           # Standard x64 installation

@@ -34,7 +34,7 @@ jobs:
             runner: windows-latest
             target: x64
           - arch: arm64
-            runner: windows-arm64  # Now available!
+            runner: windows-11-arm  # Now available!
             target: arm64
 
     runs-on: ${{ matrix.runner }}

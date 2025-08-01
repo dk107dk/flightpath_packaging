@@ -88,62 +88,7 @@ jobs:
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "Building version: $version"
 
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
-    - name: Cache Poetry and pip dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ${{ steps.pip-cache.outputs.dir }}
-          source/.venv
-          ~/.cache/pypoetry
-        key: poetry-${{ matrix.arch }}-${{ runner.os }}-${{ hashFiles('source/poetry.lock', 'source/pyproject.toml') }}
-        restore-keys: |
-          poetry-${{ matrix.arch }}-${{ runner.os }}-
-          poetry-${{ runner.os }}-
-
-    - name: Set up cross-compilation environment
-      if: matrix.arch == 'arm64'
-      shell: pwsh
-      run: |
-        # Set environment variables for cross-compilation
-        echo "DISTUTILS_USE_SDK=1" >> $env:GITHUB_ENV
-        echo "MSSdk=1" >> $env:GITHUB_ENV
-        echo "VCPKG_DEFAULT_TRIPLET=arm64-windows" >> $env:GITHUB_ENV
-        echo "CMAKE_GENERATOR_PLATFORM=ARM64" >> $env:GITHUB_ENV
-
-    - name: Install system dependencies (ARM64)
-      if: matrix.arch == 'arm64'
-      shell: pwsh
-      run: |
-        # Install vcpkg for native dependencies
-        git clone https://github.com/Microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg.exe install grpc:arm64-windows protobuf:arm64-windows
-
-    - name: Overwrite poetry.lock with architecture-specific version
-      shell: pwsh
-      run: |
-        $lockFile = if ("${{ matrix.arch }}" -eq "arm64") {
-          "$env:GITHUB_WORKSPACE/packaging/poetry-arm64.lock"
-        } else {
-          "$env:GITHUB_WORKSPACE/packaging/poetry.lock"
-        }
-
-        if (Test-Path $lockFile) {
-          Copy-Item -Path $lockFile -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
-        } else {
-          Write-Warning "Lock file not found: $lockFile, using default"
-          Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
-        }
-
-    - name: Overwrite poetry.lock
-      shell: pwsh
-      run: |
-        Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
+    
 
     - name: Get pip cache dir
       id: pip-cache

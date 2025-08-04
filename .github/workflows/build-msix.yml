@@ -1,7 +1,7 @@
-name: Build Universal MSIX Package
+name: Build x64 MSIX Package
 
 on:
-  workflow_dispatch:  # Manual trigger for now
+  workflow_dispatch:
     inputs:
       source_branch:
         description: 'Branch from source repo to build'
@@ -15,33 +15,20 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'msix/**'  # Only trigger on packaging changes
+      - 'msix/**'
+      - '.github/workflows/**'
 
   schedule:
     - cron: '0 2 * * 1'  # Weekly builds on Monday at 2 AM UTC
 
 env:
   SOURCE_REPO: 'dk107dk/flightpath'
-  PYTHON_VERSION: '3.12'  # Adjust as needed
+  PYTHON_VERSION: '3.12'
   APP_NAME: 'FlightPathData'
 
 jobs:
-  build-architectures:
-    strategy:
-      matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-            target: x64
-          - arch: arm64
-            runner: windows-11-arm  # Now available!
-            target: arm64
-
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120  # Set reasonable timeout
-
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
+  build-x64:
+    runs-on: windows-latest
 
     steps:
     - name: Checkout packaging repo
@@ -55,13 +42,13 @@ jobs:
         repository: ${{ env.SOURCE_REPO }}
         ref: ${{ github.event.inputs.source_branch || 'main' }}
         path: source
-        token: ${{ secrets.GITHUB_TOKEN }}  # Use PAT if needed for private access
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        architecture: ${{ matrix.arch }}
+        architecture: x64
 
     - name: Install and Configure Poetry
       shell: pwsh
@@ -81,223 +68,45 @@ jobs:
           $version = "${{ github.event.inputs.version_tag }}"
           git checkout "tags/$version"
         } else {
-          # Extract version from pyproject.toml
           $content = Get-Content pyproject.toml -Raw
           $version = [regex]::Match($content, 'version\s*=\s*"([^"]+)"').Groups[1].Value
         }
         echo "version=$version" >> $env:GITHUB_OUTPUT
         echo "Building version: $version"
 
-    
-
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"
-
-    - name: Cache Poetry and pip dependencies
+    - name: Cache dependencies
       uses: actions/cache@v4
       with:
         path: |
-          ${{ steps.pip-cache.outputs.dir }}
+          ~/.cache/pip
           source/.venv
-          ~/.cache/pypoetry
-        key: poetry-${{ matrix.arch }}-${{ runner.os }}-${{ hashFiles('source/poetry.lock', 'source/pyproject.toml') }}
+        key: poetry-x64-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
         restore-keys: |
-          poetry-${{ matrix.arch }}-${{ runner.os }}-
-          poetry-${{ runner.os }}-
+          poetry-x64-${{ runner.os }}-
 
-    - name: Set up cross-compilation environment
-      if: matrix.arch == 'arm64'
+    - name: Overwrite poetry.lock
       shell: pwsh
       run: |
-        # Set environment variables for cross-compilation
-        echo "DISTUTILS_USE_SDK=1" >> $env:GITHUB_ENV
-        echo "MSSdk=1" >> $env:GITHUB_ENV
-        echo "VCPKG_DEFAULT_TRIPLET=arm64-windows" >> $env:GITHUB_ENV
-        echo "CMAKE_GENERATOR_PLATFORM=ARM64" >> $env:GITHUB_ENV
+        Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
 
-    - name: Install system dependencies (ARM64)
-      if: matrix.arch == 'arm64'
-      shell: pwsh
-      run: |
-        # Install vcpkg for native dependencies
-        git clone https://github.com/Microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        .\vcpkg\vcpkg.exe install grpc:arm64-windows protobuf:arm64-windows
-
-    - name: Overwrite poetry.lock with architecture-specific version
-      shell: pwsh
-      run: |
-        $lockFile = if ("${{ matrix.arch }}" -eq "arm64") {
-          "$env:GITHUB_WORKSPACE/packaging/poetry-arm64.lock"
-        } else {
-          "$env:GITHUB_WORKSPACE/packaging/poetry.lock"
-        }
-
-        if (Test-Path $lockFile) {
-          Copy-Item -Path $lockFile -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
-        } else {
-          Write-Warning "Lock file not found: $lockFile, using default"
-          Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
-        }
-
-    - name: Set up MSVC developer command prompt
-      if: matrix.arch == 'arm64'
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: arm64
-
-    - name: Install dependencies with ARM64 optimizations
-      shell: pwsh
-      timeout-minutes: 45
-      run: |
-        cd source
-
-        if ("${{ matrix.arch }}" -eq "arm64") {
-          Write-Host "Installing dependencies for ARM64 with optimizations..."
-
-          # Set build parallelism
-          $env:NPY_NUM_BUILD_JOBS = [Environment]::ProcessorCount
-          $env:MAKEFLAGS = "-j$([Environment]::ProcessorCount)"
-
-          # Upgrade pip and basic tools first
-          poetry run pip install --upgrade pip wheel setuptools
-
-          # Configure pip to prefer binary wheels
-          poetry run pip config set global.prefer-binary true
-
-          # Try different installation strategies for ARM64
-          Write-Host "Attempting strategy 1: Standard Poetry install..."
-          try {
-            poetry install
-            Write-Host "✅ Standard installation succeeded"
-          } catch {
-            Write-Host "❌ Standard installation failed, trying fallback strategies..."
-
-            Write-Host "Attempting strategy 2: Install problematic packages individually with binary preference..."
-            # Install known problematic packages first with pip directly
-            $problematicPackages = @('grpcio', 'cryptography', 'numpy', 'lxml')
-            foreach ($pkg in $problematicPackages) {
-              Write-Host "Installing $pkg..."
-              poetry run pip install --only-binary=:all: $pkg 2>$null
-              if ($LASTEXITCODE -ne 0) {
-                Write-Host "Binary wheel not available for $pkg, allowing source build..."
-                poetry run pip install $pkg
-              }
-            }
-
-            # Try poetry install again
-            poetry install --no-dev
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ All strategies failed"
-              exit 1
-            }
-          }
-        } else {
-          # Standard x64 installation
-          poetry install
-        }
-
-    - name: Verify critical dependencies
+    - name: Install dependencies
       shell: pwsh
       run: |
         cd source
-        poetry run python -c "
-        import sys
-        critical_packages = ['grpcio', 'PySide6', 'cryptography']
-        for pkg in critical_packages:
-            try:
-                __import__(pkg)
-                print(f'✅ {pkg} imported successfully')
-            except ImportError as e:
-                print(f'❌ {pkg} failed to import: {e}')
-                sys.exit(1)
-        print('All critical packages verified')
-        "
-
-    - name: Install dependencies with ARM64 optimizations
-      shell: pwsh
-      timeout-minutes: 45
-      run: |
-        cd source
-
-        if ("${{ matrix.arch }}" -eq "arm64") {
-          Write-Host "Installing dependencies for ARM64 with optimizations..."
-
-          # Set build parallelism
-          $env:NPY_NUM_BUILD_JOBS = [Environment]::ProcessorCount
-          $env:MAKEFLAGS = "-j$([Environment]::ProcessorCount)"
-
-          # Upgrade pip and basic tools first
-          poetry run pip install --upgrade pip wheel setuptools
-
-          # Configure pip to prefer binary wheels
-          poetry run pip config set global.prefer-binary true
-
-          # Try different installation strategies for ARM64
-          Write-Host "Attempting strategy 1: Standard Poetry install..."
-          try {
-            poetry install
-            Write-Host "✅ Standard installation succeeded"
-          } catch {
-            Write-Host "❌ Standard installation failed, trying fallback strategies..."
-
-            Write-Host "Attempting strategy 2: Install problematic packages individually with binary preference..."
-            # Install known problematic packages first with pip directly
-            $problematicPackages = @('grpcio', 'cryptography', 'numpy', 'lxml')
-            foreach ($pkg in $problematicPackages) {
-              Write-Host "Installing $pkg..."
-              poetry run pip install --only-binary=:all: $pkg 2>$null
-              if ($LASTEXITCODE -ne 0) {
-                Write-Host "Binary wheel not available for $pkg, allowing source build..."
-                poetry run pip install $pkg
-              }
-            }
-
-            # Try poetry install again
-            poetry install --no-dev
-            if ($LASTEXITCODE -ne 0) {
-              Write-Host "❌ All strategies failed"
-              exit 1
-            }
-          }
-        } else {
-          # Standard x64 installation
-          poetry install
-        }
-
-    - name: Verify critical dependencies
-      shell: pwsh
-      run: |
-        cd source
-        poetry run python -c "
-        import sys
-        critical_packages = ['grpcio', 'PySide6', 'cryptography']
-        for pkg in critical_packages:
-            try:
-                __import__(pkg)
-                print(f'✅ {pkg} imported successfully')
-            except ImportError as e:
-                print(f'❌ {pkg} failed to import: {e}')
-                sys.exit(1)
-        print('All critical packages verified')
-        "
+        poetry install
 
     - name: Build executable
       shell: pwsh
       run: |
         cd source
-        # Create build directory
-        New-Item -ItemType Directory -Force -Path "dist/${{ matrix.arch }}"
+        New-Item -ItemType Directory -Force -Path "dist/x64"
 
-        # Create a spec file based on your existing one but adapted for CI
+        # Create PyInstaller spec file
         $specLines = @(
           "import os",
           "import sys",
           "# -*- mode: python ; coding: utf-8 -*-",
           "",
-          "# Set paths for CI environment",
           "base_path = os.path.abspath('.')",
           "assets_path = os.path.join(base_path, 'flightpath', 'assets')",
           "icon_path = os.path.join(assets_path, 'icons', 'icon.ico')",
@@ -354,57 +163,31 @@ jobs:
           ")"
         )
 
-        # Write the spec file
         $specLines | Out-File -FilePath "flightpath_ci.spec" -Encoding utf8
 
-        # Run PyInstaller with the spec file
         poetry run python -m PyInstaller `
-          --distpath "dist/${{ matrix.arch }}" `
-          --workpath "build/${{ matrix.arch }}" `
+          --distpath "dist/x64" `
+          --workpath "build/x64" `
           flightpath_ci.spec
 
-        # Verify the build
-        if (Test-Path "dist/${{ matrix.arch }}/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe") {
-          echo "✅ Build successful for ${{ matrix.arch }}"
-          Get-ChildItem "dist/${{ matrix.arch }}/${{ env.APP_NAME }}" | Select-Object Name, Length
+        if (Test-Path "dist/x64/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe") {
+          echo "✅ x64 build successful"
+          Get-ChildItem "dist/x64/${{ env.APP_NAME }}" | Select-Object Name, Length
         } else {
-          echo "❌ Build failed for ${{ matrix.arch }}"
-          # Debug: Show what was actually created
-          echo "Contents of dist/${{ matrix.arch }}:"
-          Get-ChildItem "dist/${{ matrix.arch }}" -Recurse | Select-Object FullName
+          echo "❌ x64 build failed"
+          Get-ChildItem "dist/x64" -Recurse | Select-Object FullName
           exit 1
-        }
-
-    - name: Debug build environment
-      if: failure() && matrix.arch == 'arm64'
-      shell: pwsh
-      run: |
-        Write-Host "=== Environment Info ==="
-        python --version
-        pip --version
-        poetry --version
-
-        Write-Host "=== Installed Packages ==="
-        cd source
-        poetry show
-
-        Write-Host "=== Build Logs ==="
-        if (Test-Path "build/") {
-          Get-ChildItem build/ -Recurse -Filter "*.log" | ForEach-Object {
-            Write-Host "--- $($_.FullName) ---"
-            Get-Content $_.FullName | Select-Object -Last 50
-          }
         }
 
     - name: Prepare MSIX content
       shell: pwsh
       run: |
         $ws = $env:GITHUB_WORKSPACE
-        $stagingDir = "$ws/packaging/msix/staging/${{ matrix.arch }}"
+        $stagingDir = "$ws/packaging/msix/staging/x64"
         New-Item -ItemType Directory -Force -Path $stagingDir
 
         # Copy built application
-        Copy-Item -Recurse "$ws/source/dist/${{ matrix.arch }}/${{ env.APP_NAME }}/*" $stagingDir
+        Copy-Item -Recurse "$ws/source/dist/x64/${{ env.APP_NAME }}/*" $stagingDir
 
         # Copy manifest and assets
         Copy-Item "$ws/packaging/msix/manifest/AppxManifest.xml" "$stagingDir/"
@@ -414,133 +197,34 @@ jobs:
         $manifestPath = "$stagingDir/AppxManifest.xml"
         [xml]$manifest = Get-Content $manifestPath
         $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
-        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "${{ matrix.target }}")
+        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "x64")
         $manifest.Save($manifestPath)
 
     - name: Create MSIX package
       shell: pwsh
       run: |
         $ws = $env:GITHUB_WORKSPACE
-        $stagingDir = "$ws/packaging/msix/staging/${{ matrix.arch }}"
+        $stagingDir = "$ws/packaging/msix/staging/x64"
         $outputDir = "$ws/packaging/msix/output"
         New-Item -ItemType Directory -Force -Path $outputDir
 
-        # Use MakeAppx to create the package
+        $msixName = "${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}.msix"
+
         & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
           /d $stagingDir `
-          /p "$outputDir/${{ env.APP_NAME }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.msix" `
+          /p "$outputDir/$msixName" `
           /l /o
 
         if ($LASTEXITCODE -eq 0) {
-          echo "✅ MSIX package created successfully for ${{ matrix.arch }}"
+          echo "✅ x64 MSIX package created: $msixName"
         } else {
-          echo "❌ MSIX packaging failed for ${{ matrix.arch }}"
+          echo "❌ x64 MSIX packaging failed"
           exit 1
         }
 
-    - name: Upload architecture-specific artifact
+    - name: Upload x64 MSIX artifact
       uses: actions/upload-artifact@v4
       with:
-        name: msix-${{ matrix.arch }}
+        name: msix-x64
         path: packaging/msix/output/*.msix
         retention-days: 30
-
-  create-universal-bundle:
-    name: Create Universal MSIX Bundle
-    needs: build-architectures
-    runs-on: windows-latest
-
-    steps:
-    - name: Download all architecture artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-
-    - name: Create MSIX Bundle
-      shell: pwsh
-      run: |
-        $bundleDir = "msix/bundle"
-        New-Item -ItemType Directory -Force -Path $bundleDir
-
-        $msixFiles = Get-ChildItem -Path "artifacts" -Recurse -Filter "*.msix"
-        $msixFiles | ForEach-Object {
-            Copy-Item -Path $_.FullName -Destination $bundleDir
-        }
-
-        # Extract version from one of the file names
-        $oneMsix = $msixFiles | Select-Object -First 1
-        $version = ($oneMsix.Name -split '-')[-1].Replace('.msix', '')
-
-        $outputDir = "msix/output"
-        New-Item -ItemType Directory -Force -Path $outputDir
-
-        $bundlePath = "$outputDir/${{ env.APP_NAME }}-Universal-$version.msixbundle"
-
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" bundle `
-          /d $bundleDir `
-          /p $bundlePath `
-          /l /o
-
-        if ($LASTEXITCODE -eq 0) {
-          echo "✅ Universal MSIX bundle created successfully"
-        } else {
-          echo "❌ Universal MSIX bundle creation failed"
-          exit 1
-        }
-
-    - name: Upload universal bundle
-      uses: actions/upload-artifact@v4
-      with:
-        name: msix-universal-bundle
-        path: msix/output/*.msixbundle
-        retention-days: 90
-
-  test-bundle:
-    name: Test Universal MSIX Bundle
-    needs: create-universal-bundle
-    runs-on: windows-latest
-
-    steps:
-    - name: Download universal bundle
-      uses: actions/download-artifact@v4
-      with:
-        name: msix-universal-bundle
-        path: test-packages
-
-    - name: Test bundle (PowerShell)
-      shell: pwsh
-      run: |
-        $bundle = Get-ChildItem "test-packages/*.msixbundle" | Select-Object -First 1
-        if (-not $bundle) {
-            echo "❌ No MSIX bundle found to test."
-            exit 1
-        }
-        echo "Testing bundle: $($bundle.FullName)"
-
-        # A simple test could be to unpack it and check for the architecture packages
-        $unpackDir = "unpacked_bundle"
-        New-Item -ItemType Directory -Force -Path $unpackDir
-
-        $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe"
-        & $makeappx unpack `
-          /p $bundle.FullName `
-          /d $unpackDir `
-          /l /o
-
-        if ($LASTEXITCODE -ne 0) {
-            echo "❌ Failed to unpack the bundle."
-            exit 1
-        }
-
-        $x64Package = Get-ChildItem "$unpackDir/*_x64.msix"
-        $arm64Package = Get-ChildItem "$unpackDir/*_arm64.msix"
-
-        if ($x64Package -and $arm64Package) {
-            echo "✅ Bundle contains both x64 and ARM64 packages."
-        } else {
-            echo "❌ Bundle is missing one or more architecture-specific packages."
-            Get-ChildItem $unpackDir
-            exit 1
-        }
-
-        echo "📦 Bundle validation completed successfully"

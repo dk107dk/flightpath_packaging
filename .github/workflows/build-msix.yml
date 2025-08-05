@@ -284,7 +284,7 @@ jobs:
     - name: Upload signable x64 MSIX artifact
       uses: actions/upload-artifact@v4
       with:
-        name: msix-x64
+        name: msix-x64-test
         path: "${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}-test.msix"
         retention-days: 30
 

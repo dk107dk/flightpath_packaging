@@ -19,18 +19,12 @@
   <Resources>
     <Resource Language="en-us"/>
   </Resources>
-  <!-- original. couldn't get pass app submission probably because runFullTrust -->
-  <!--Capabilities>
+  <Capabilities>
     <Capability Name="internetClient" />
+    <uap:Capability Name="documentsLibrary" />
+    <uap:Capability Name="removableStorage" />
     <rescap:Capability Name="runFullTrust" />
-  </Capabilities-->
-
-<Capabilities>
-  <Capability Name="internetClient" />
-  <!--Capability Name="internetClientServer" /-->  <!-- if SFTP needs server capability -->
-  <uap:Capability Name="documentsLibrary" />  <!-- for broad document access -->
-  <uap:Capability Name="removableStorage" />  <!-- if users might store projects on external drives -->
-</Capabilities>
+  </Capabilities>
   <Applications>
     <Application Id="App"
                  Executable="FlightPathData.exe"

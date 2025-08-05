@@ -592,7 +592,7 @@ name = "csvpath"
 version = "0.0.553"
 description = "A data preboarding framework for managing and validating CSV, Excel, and other tabular data files using a Collect, Store, Validate, Publish pattern to create a trusted publisher for downstream data consumers."
 optional = false
-python-versions = ""
+python-versions = "*"
 files = [
     {file = "csvpath-0.0.553-py3-none-any.whl", hash = "sha256:0d9571877566a11580444d0aab79da86ba2c00d2287810f37b3783888bb722ed"},
     {file = "csvpath-0.0.553.tar.gz", hash = "sha256:f3def1d29c11708b5a5977988005028b6ed0f533df8ef44405403b6b2a46130b"},

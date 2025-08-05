@@ -228,3 +228,64 @@ jobs:
         name: msix-x64
         path: packaging/msix/output/*.msix
         retention-days: 30
+
+
+
+
+
+    # exp! =================================
+
+    #
+    # build signable test msix
+    #
+    - name: Prepare signable MSIX content
+      shell: pwsh
+      run: |
+        $ws = $env:GITHUB_WORKSPACE
+        $testingDir = "$ws/packaging/msix/testing/x64"
+        New-Item -ItemType Directory -Force -Path $testingDir
+
+        # Copy built application
+        Copy-Item -Recurse "$ws/source/dist/x64/${{ env.APP_NAME }}/*" $testingDir
+
+        # Copy manifest and assets
+        Copy-Item "$ws/packaging/msix/manifest/testing/AppxManifest.xml" "$testingDir/"
+        Copy-Item -Recurse "$ws/packaging/msix/assets" "$testingDir/"
+
+        # Update manifest with correct architecture and version
+        $manifestPath = "$testingDir/AppxManifest.xml"
+        [xml]$manifest = Get-Content $manifestPath
+        $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
+        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "x64")
+        $manifest.Save($manifestPath)
+
+    - name: Create signable MSIX package
+      shell: pwsh
+      run: |
+        $ws = $env:GITHUB_WORKSPACE
+        $testingDir = "$ws/packaging/msix/testing/x64"
+        $outputDir = "$ws/packaging/msix/output"
+        New-Item -ItemType Directory -Force -Path $outputDir
+
+        $msixName = "${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}-test.msix"
+
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
+          /d $testingDir `
+          /p "$outputDir/$msixName" `
+          /l /o
+
+        if ($LASTEXITCODE -eq 0) {
+          echo "✅ x64 MSIX package created: $msixName"
+        } else {
+          echo "❌ x64 MSIX packaging failed"
+          exit 1
+        }
+
+    - name: Upload signable x64 MSIX artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: msix-x64
+        path: "${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}-test.msix"
+        retention-days: 30
+
+

@@ -153,12 +153,12 @@ jobs:
           --workpath "build/x64" `
           flightpath_ci.spec
 
-        if (Test-Path "dist/x64/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe") {
+        if (Test-Path "dist/x64/${{ env.APP_NAME }}.exe") {
           echo "✅ x64 build successful"
-          Get-ChildItem "dist/x64/${{ env.APP_NAME }}" | Select-Object Name, Length
+          #Get-ChildItem "dist/x64/${{ env.APP_NAME }}" | Select-Object Name, Length
         } else {
           echo "❌ x64 build failed"
-          Get-ChildItem "dist/x64" -Recurse | Select-Object FullName
+          #Get-ChildItem "dist/x64" -Recurse | Select-Object FullName
           exit 1
         }
 
@@ -169,7 +169,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: "${{ env.APP_NAME }}.exe"
-        path: "source/dist/x64/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        path: "source/dist/x64/${{ env.APP_NAME }}.exe"
         retention-days: 30
 
 
@@ -184,7 +184,7 @@ jobs:
         New-Item -ItemType Directory -Force -Path $stagingDir
 
         # Copy built application
-        Copy-Item -Recurse "$ws/source/dist/x64/${{ env.APP_NAME }}/*" $stagingDir
+        Copy-Item -Recurse "$ws/source/dist/x64/*" $stagingDir
 
         # Copy manifest and assets
         Copy-Item "$ws/packaging/msix/manifest/AppxManifest.xml" "$stagingDir/"
@@ -246,7 +246,7 @@ jobs:
         New-Item -ItemType Directory -Force -Path $testingDir
 
         # Copy built application
-        Copy-Item -Recurse "$ws/source/dist/x64/${{ env.APP_NAME }}/*" $testingDir
+        Copy-Item -Recurse "$ws/source/dist/x64/*" $testingDir
 
         # Copy manifest and assets
         Copy-Item "$ws/packaging/msix/manifest/testing/AppxManifest.xml" "$testingDir/"

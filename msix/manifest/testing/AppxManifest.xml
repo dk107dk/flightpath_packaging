@@ -5,7 +5,9 @@
          IgnorableNamespaces="uap rescap">
   <Identity Name="FlightPathData"
             Publisher="CN=AtestaAnalytics"
-            Version="1.0.1.0" />
+            Version="1.0.1.0" 
+  	    ProcessorArchitecture="x64" 
+/>
   <Properties>
     <DisplayName>FlightPath Data</DisplayName>
     <PublisherDisplayName>Atesta Analytics</PublisherDisplayName>
@@ -32,7 +34,7 @@
       <uap:VisualElements DisplayName="FlightPath Data"
                           Square150x150Logo="logo150x150.png"
                           Square44x44Logo="logo44x44.png"
-                          Description="A flight data processing application"
+                          Description="A DataOps data processing application"
                           BackgroundColor="transparent"/>
     </Application>
   </Applications>

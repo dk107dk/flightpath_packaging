@@ -185,8 +185,8 @@ jobs:
     - name: Upload signable x64 MSIX artifact
       uses: actions/upload-artifact@v4
       with:
-        name: "${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
-        path: "dist/x64/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        name: "${{ env.APP_NAME }}.exe"
+        path: "${{ env:GITHUB_WORKSPACE }}/source/dist/x64/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
         retention-days: 30
 
 

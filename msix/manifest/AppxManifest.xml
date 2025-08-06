@@ -5,7 +5,7 @@
          IgnorableNamespaces="uap rescap">
   <Identity Name="AtestaAnalytics.FlightPathData"
             Publisher="CN=E95957FE-6131-4006-B006-8B5BDB2B3037"
-            Version="1.0.1.0" 
+            Version="1.1.15.0" 
 	    ProcessorArchitecture="x64"
   />
   <Properties>

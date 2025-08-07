@@ -172,10 +172,6 @@ jobs:
         path: "source/dist/x64/${{ env.APP_NAME }}.exe"
         retention-days: 30
 
-
-
-
-
     - name: Prepare MSIX content
       shell: pwsh
       run: |
@@ -228,12 +224,6 @@ jobs:
         retention-days: 30
 
 
-
-
-
-    # =================================
-    # exp!
-    # =================================
 
     #
     # build signable test msix

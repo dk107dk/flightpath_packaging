@@ -1,4 +1,4 @@
-name: Build arm64 MSIX Package
+name: Build x64 MSIX Package
 
 on:
   workflow_dispatch:
@@ -27,8 +27,8 @@ env:
   APP_NAME: 'FlightPathData'
 
 jobs:
-  build-arm64:
-    runs-on: windows-11-arm
+  build-x64:
+    runs-on: windows-latest
 
     steps:
     - name: Checkout packaging repo
@@ -48,7 +48,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        architecture: arm64
+        architecture: x64
 
     - name: Install and Configure Poetry
       shell: pwsh
@@ -80,10 +80,14 @@ jobs:
         path: |
           ~/.cache/pip
           source/.venv
-        key: poetry-arm64-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
+        key: poetry-x64-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
         restore-keys: |
-          poetry-arm64-${{ runner.os }}-
+          poetry-x64-${{ runner.os }}-
 
+    - name: Overwrite poetry.lock
+      shell: pwsh
+      run: |
+        Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
 
     - name: Install dependencies
       shell: pwsh
@@ -95,7 +99,7 @@ jobs:
       shell: pwsh
       run: |
         cd source
-        New-Item -ItemType Directory -Force -Path "dist/arm64"
+        New-Item -ItemType Directory -Force -Path "dist/x64"
 
         # Create PyInstaller spec file
         $specLines = @(
@@ -145,38 +149,38 @@ jobs:
         $specLines | Out-File -FilePath "flightpath_ci.spec" -Encoding utf8
 
         poetry run python -m PyInstaller `
-          --distpath "dist/arm64" `
-          --workpath "build/arm64" `
+          --distpath "dist/x64" `
+          --workpath "build/x64" `
           flightpath_ci.spec
 
-        if (Test-Path "dist/arm64/${{ env.APP_NAME }}.exe") {
-          echo "✅ arm64 build successful"
-          #Get-ChildItem "dist/arm64/${{ env.APP_NAME }}" | Select-Object Name, Length
+        if (Test-Path "dist/x64/${{ env.APP_NAME }}.exe") {
+          echo "✅ x64 build successful"
+          #Get-ChildItem "dist/x64/${{ env.APP_NAME }}" | Select-Object Name, Length
         } else {
-          echo "❌ arm64 build failed"
-          #Get-ChildItem "dist/arm64" -Recurse | Select-Object FullName
+          echo "❌ x64 build failed"
+          #Get-ChildItem "dist/x64" -Recurse | Select-Object FullName
           exit 1
         }
 
     #
     # keep the exe
     #
-    - name: Upload signable arm64 MSIX artifact
+    - name: Upload signable x64 MSIX artifact
       uses: actions/upload-artifact@v4
       with:
         name: "${{ env.APP_NAME }}.exe"
-        path: "source/dist/arm64/${{ env.APP_NAME }}.exe"
+        path: "source/dist/x64/${{ env.APP_NAME }}.exe"
         retention-days: 30
 
     - name: Prepare MSIX content
       shell: pwsh
       run: |
         $ws = $env:GITHUB_WORKSPACE
-        $stagingDir = "$ws/packaging/msix/staging/arm64"
+        $stagingDir = "$ws/packaging/msix/staging/x64"
         New-Item -ItemType Directory -Force -Path $stagingDir
 
         # Copy built application
-        Copy-Item -Recurse "$ws/source/dist/arm64/*" $stagingDir
+        Copy-Item -Recurse "$ws/source/dist/x64/*" $stagingDir
 
         # Copy manifest and assets
         Copy-Item "$ws/packaging/msix/manifest/AppxManifest.xml" "$stagingDir/"
@@ -186,36 +190,36 @@ jobs:
         $manifestPath = "$stagingDir/AppxManifest.xml"
         [xml]$manifest = Get-Content $manifestPath
         $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
-        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "arm64")
+        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "x64")
         $manifest.Save($manifestPath)
 
     - name: Create MSIX package
       shell: pwsh
       run: |
         $ws = $env:GITHUB_WORKSPACE
-        $stagingDir = "$ws/packaging/msix/staging/arm64"
+        $stagingDir = "$ws/packaging/msix/staging/x64"
         $outputDir = "$ws/packaging/msix/output"
         New-Item -ItemType Directory -Force -Path $outputDir
 
-        $msixName = "${{ env.APP_NAME }}-arm64.msix"
-        #$msixName = "${{ env.APP_NAME }}-arm64-${{ steps.get_version.outputs.version }}.msix"
+        $msixName = "${{ env.APP_NAME }}-x64.msix"
+        #$msixName = "${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}.msix"
 
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\arm64\makeappx.exe" pack `
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
           /d $stagingDir `
           /p "$outputDir/$msixName" `
           /l /o
 
         if ($LASTEXITCODE -eq 0) {
-          echo "✅ arm64 MSIX package created: $msixName"
+          echo "✅ x64 MSIX package created: $msixName"
         } else {
-          echo "❌ arm64 MSIX packaging failed"
+          echo "❌ x64 MSIX packaging failed"
           exit 1
         }
 
-    - name: Upload arm64 MSIX artifact
+    - name: Upload x64 MSIX artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.APP_NAME }}-arm64.msix
+        name: ${{ env.APP_NAME }}-x64.msix
         path: packaging/msix/output/*.msix
         retention-days: 30
 
@@ -228,11 +232,11 @@ jobs:
       shell: pwsh
       run: |
         $ws = $env:GITHUB_WORKSPACE
-        $testingDir = "$ws/packaging/msix/testing/arm64"
+        $testingDir = "$ws/packaging/msix/testing/x64"
         New-Item -ItemType Directory -Force -Path $testingDir
 
         # Copy built application
-        Copy-Item -Recurse "$ws/source/dist/arm64/*" $testingDir
+        Copy-Item -Recurse "$ws/source/dist/x64/*" $testingDir
 
         # Copy manifest and assets
         Copy-Item "$ws/packaging/msix/manifest/testing/AppxManifest.xml" "$testingDir/"
@@ -242,38 +246,38 @@ jobs:
         $manifestPath = "$testingDir/AppxManifest.xml"
         [xml]$manifest = Get-Content $manifestPath
         $manifest.Package.Identity.Version = "${{ steps.get_version.outputs.version }}.0"
-        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "arm64")
+        $manifest.Package.Identity.SetAttribute("ProcessorArchitecture", "x64")
         $manifest.Save($manifestPath)
 
     - name: Create signable MSIX package
       shell: pwsh
       run: |
         $ws = $env:GITHUB_WORKSPACE
-        $testingDir = "$ws/packaging/msix/testing/arm64"
+        $testingDir = "$ws/packaging/msix/testing/x64"
         $outputDir = "$ws/packaging/msix/output"
         New-Item -ItemType Directory -Force -Path $outputDir
 
-        $msixName = "${{ env.APP_NAME }}-test-arm64.msix"
-        # $msixName = "${{ env.APP_NAME }}-arm64-${{ steps.get_version.outputs.version }}-test.msix"
+        $msixName = "${{ env.APP_NAME }}-test-x64.msix"
+        # $msixName = "${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}-test.msix"
 
-        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\arm64\makeappx.exe" pack `
+        & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\makeappx.exe" pack `
           /d $testingDir `
           /p "$outputDir/$msixName" `
           /l /o
 
         if ($LASTEXITCODE -eq 0) {
-          echo "✅ arm64 MSIX package created: $msixName"
+          echo "✅ x64 MSIX package created: $msixName"
         } else {
-          echo "❌ arm64 MSIX packaging failed"
+          echo "❌ x64 MSIX packaging failed"
           exit 1
         }
 
-    - name: Upload signable arm64 MSIX artifact
+    - name: Upload signable x64 MSIX artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.APP_NAME }}-test-arm64.msix
-        path: packaging/msix/output/${{ env.APP_NAME }}-test-arm64.msix
+        name: ${{ env.APP_NAME }}-test-x64.msix
+        path: packaging/msix/output/${{ env.APP_NAME }}-test-x64.msix
         retention-days: 30
-        #path: packaging/msix/output/${{ env.APP_NAME }}-arm64-${{ steps.get_version.outputs.version }}-test.msix
+        #path: packaging/msix/output/${{ env.APP_NAME }}-x64-${{ steps.get_version.outputs.version }}-test.msix
 
 

@@ -84,10 +84,6 @@ jobs:
         restore-keys: |
           poetry-arm64-${{ runner.os }}-
 
-    - name: Overwrite poetry.lock
-      shell: pwsh
-      run: |
-        Copy-Item -Path "$env:GITHUB_WORKSPACE/packaging/poetry.lock" -Destination "$env:GITHUB_WORKSPACE/source/poetry.lock"
 
     - name: Install dependencies
       shell: pwsh

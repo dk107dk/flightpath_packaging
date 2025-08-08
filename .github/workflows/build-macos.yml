@@ -232,10 +232,7 @@ jobs:
           echo "✅ macOS build successful"
           ls -la "dist/macos/FlightPath Data.app"
 
-          # Optional: Create a zip of the app for easier artifact handling.
-          # we end up with a zip of a zip, but w/o we end up downloading a
-          # zip that contains Contents. there's probably a better way, but
-          # zip of zip is straightforward
+          # Optional: Create a zip of the app for easier artifact handling
           cd dist/macos
           zip -r "FlightPath Data.app.zip" "FlightPath Data.app"
           cd ../..
@@ -249,7 +246,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.APP_NAME }}-macos-${{ steps.get_build_number.outputs.build_number }}.zip
-        path: source/dist/macos/FlightPath Data.app
+        path: source/dist/macos/FlightPath Data.app.zip
         retention-days: 30
 
 

@@ -2,8 +2,9 @@
 # Step 1: Create a component package first
 #
 echo "Starting pkg.sh"
+mkdir pkg
 
-FLIGHTPATH_BUILD=$(cat build_number.txt)
+FLIGHTPATH_BUILD=$(cat ../../flightpath/flightpath/assets/build_number.txt)
 
 
 echo "FLIGHTPATH_BUILD: $FLIGHTPATH_BUILD"

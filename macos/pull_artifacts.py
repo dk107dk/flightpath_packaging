@@ -61,23 +61,14 @@ def download_artifact(artifact_id, filename):
     with open(path, "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
-    with ZipFile(path, 'r') as zip_object:
-        zip_object.extractall(path=DOWNLOAD_DIR)
-    #
-    # unzip again because artifact zips a zip and the first zip
-    # collects the whole app, rather than the Contents. this
-    # results in a dir containing the app. we then move the app
-    # up a level to the dist dir. convoluted. :/
-    #
-    zippath = os.path.join(DOWNLOAD_DIR, "FlightPath Data.app.zip")
-    appdirpath = os.path.join(DOWNLOAD_DIR, "FlightPath Data_")
-    apppath = os.path.join(DOWNLOAD_DIR, "FlightPath Data.app")
-    with ZipFile(zippath, 'r') as zip_object:
-        zip_object.extractall(path=DOWNLOAD_DIR)
+    import subprocess
+    subprocess.run([
+        "ditto", "-x", "-k", path, DOWNLOAD_DIR
+    ], check=True)
+    subprocess.run([
+        "ditto", "-x", "-k", os.path.join(DOWNLOAD_DIR, "FlightPath Data.app.zip"), DOWNLOAD_DIR
+    ], check=True)
 
-    shutil.move(apppath, appdirpath)
-    os.chmod(f"{appdirpath}/Contents/MacOS/FlightPath Data", 0o755)
-    shutil.move(appdirpath, apppath)
 
 
 for a in artifacts["artifacts"]:

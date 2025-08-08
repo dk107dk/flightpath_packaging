@@ -2,10 +2,7 @@
 # run this script from ./packaging
 #
 echo -e '\nclearing...\n'
-rm -Rf ./dist/*
-rm -Rf ./dmg/*
-rm -Rf ./pkg/*
-rm -Rf ./tmp/*
+. ./cleaner.sh
 #
 #
 #
@@ -37,13 +34,14 @@ poetry run python pull_artifacts.py
 #
 xattr -dr com.apple.quarantine ./dist/FlightPath\ Data.app/*
 echo -e '\ncopying app to tmp for next steps\n'
+mkdir tmp
 cp -R ./dist/FlightPath\ Data.app ./tmp/FlightPath\ Data.app
 
 #
 # codesign and validtion. code signing can be done by pyinstaller, but we (may) need
 # the force and deep flags
 #
-source ./codesign_app_for_store.sh
+. ./codesign_app_for_store.sh
 
 #
 # create pkg
@@ -55,15 +53,15 @@ echo -e '\ncreating package...\n'
 # ship to apple
 #
 echo -e '\nverifying .itmsp file with apple...\n'
-source ./transport_verify.sh
+. ./transport_verify.sh
 
-echo -e '\nNOT transporting .itmsp file to apple...\n'
-#source ./transport.sh
+echo -e '\ntransporting .itmsp file to apple...\n'
+. ./transport.sh
 
 #
 # clean up to help prevent junk from going into git
 #
 #cd ..
-#. ./cleaner.sh
+. ./cleaner.sh
 
 

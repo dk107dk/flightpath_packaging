@@ -8,14 +8,13 @@
 #
 
 echo -e "\nloading cert for code-sign"
-
 security default-keychain -s flightpath.keychain
 security unlock-keychain -p $FLIGHTPATH_KEYCHAIN_PASSWORD flightpath.keychain
 security set-key-partition-list -S apple-tool:,apple:,codedign: -s -k $FLIGHTPATH_KEYCHAIN_PASSWORD flightpath.keychain
 
 echo -e "\nsigning app"
-
 codesign \
+    --verbose=4 \
     --force \
     --deep \
     --options=runtime \
@@ -26,8 +25,12 @@ codesign \
     ./tmp/FlightPath\ Data.app
 
 echo -e "\nverifing code-signed app"
-
-codesign -vvv --deep --strict ./tmp/FlightPath\ Data.app
+codesign \
+    --verbose=4 \
+    -vvv \
+    --deep \
+    --strict \
+    ./tmp/FlightPath\ Data.app
 
 security default-keychain -s login.keychain
 

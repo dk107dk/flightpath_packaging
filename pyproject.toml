@@ -1,17 +1,38 @@
-[project]
+[tool.poetry]
 name = "flightpath-packaging"
-version = "0.1.0"
+version = "0.0.1"
 description = ""
-authors = [
-    {name = "Your Name",email = "you@example.com"}
-]
+authors = ["David Kershaw <dkershaw@atestaanalytics.com>"]
 readme = "README.md"
-requires-python = ">=3.13"
-dependencies = [
-    "requests (>=2.32.4,<3.0.0)"
-]
+
+[tool.poetry.dependencies]
+python = ">3.10,<3.14"
+pyside6 = ">=6.8.3"
+pygments = "^2.19.1"
+darkdetect = "^0.8.0"
+csvpath = "^0.0.553"
+pyinstaller = "^6.15.0"
+
+[tool.poetry.scripts]
+#flightpath = "flightpath.main:run"
+
+[tool.poetry.group.dev.dependencies]
+#pytest-qt = "^4.4.0"
+#black = "^25.1.0"
+#mypy = "^1.15.0"
+pyinstaller = "^6.13.0"
+#pillow = "^11.2.1"
+#pylint = "^3.3.6"
+#pytest = "^8.3.5"
+#csvpath = { path = "../csvpath/dist/csvpath-0.0.539.tar.gz" }
+
+[[tool.poetry.source]]
+name = "csvpath"
+url = "file:///Users/davidkershaw/dev/csvpath/dist"
+priority = "explicit"
 
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+

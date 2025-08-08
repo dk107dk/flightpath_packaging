@@ -1,0 +1,251 @@
+name: Build macOS App Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: 'Branch from source repo to build'
+        required: false
+        default: 'main'
+      version_tag:
+        description: 'Version tag (optional - will use latest if not specified)'
+        required: false
+        default: ''
+
+  push:
+    branches: [ main ]
+    paths:
+      - 'macos/**'
+      - '.github/workflows/**'
+
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly builds on Monday at 2 AM UTC
+
+env:
+  SOURCE_REPO: 'dk107dk/flightpath'
+  PYTHON_VERSION: '3.12'
+  APP_NAME: 'FlightPath Data'
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout packaging repo
+      uses: actions/checkout@v4
+      with:
+        path: packaging
+
+    - name: Checkout source repo
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ env.SOURCE_REPO }}
+        ref: ${{ github.event.inputs.source_branch || 'main' }}
+        path: source
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        architecture: x64
+
+    - name: Install and Configure Poetry
+      run: |
+        pipx install poetry
+        poetry --version
+        cd source
+        poetry config virtualenvs.create true
+        poetry config virtualenvs.in-project true
+
+    - name: Get version from source
+      id: get_version
+      run: |
+        cd source
+        if [ -n "${{ github.event.inputs.version_tag }}" ]; then
+          version="${{ github.event.inputs.version_tag }}"
+          git checkout "tags/$version"
+        else
+          version=$(grep -E '^version\s*=' pyproject.toml | sed -E 's/version\s*=\s*"([^"]+)"/\1/')
+        fi
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "Building version: $version"
+
+    - name: Get build number
+      id: get_build_number
+      run: |
+        if [ -f "source/build_number.txt" ]; then
+          build_number=$(cat source/build_number.txt | tr -d '\n\r')
+        else
+          # Generate build number from timestamp if file doesn't exist
+          build_number=$(date +%Y%m%d%H%M)
+          echo "$build_number" > source/build_number.txt
+        fi
+        echo "build_number=$build_number" >> $GITHUB_OUTPUT
+        echo "Build number: $build_number"
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pip
+          source/.venv
+        key: poetry-macos-${{ runner.os }}-${{ hashFiles('source/poetry.lock') }}
+        restore-keys: |
+          poetry-macos-${{ runner.os }}-
+
+    - name: Overwrite poetry.lock (if exists)
+      run: |
+        if [ -f "$GITHUB_WORKSPACE/packaging/poetry.lock" ]; then
+          cp "$GITHUB_WORKSPACE/packaging/poetry.lock" "$GITHUB_WORKSPACE/source/poetry.lock"
+        fi
+
+    - name: Install dependencies
+      run: |
+        cd source
+        poetry install
+
+    - name: Build macOS app
+      run: |
+        cd source
+        mkdir -p dist/macos
+
+        # Create PyInstaller spec file based on your working spec
+        cat > flightpath_ci.spec << 'EOF'
+# -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
+import os
+
+# Read build number
+build_number = None
+if os.path.exists("build_number.txt"):
+    with open("build_number.txt", "r") as file:
+        build_number = file.read().strip()
+else:
+    build_number = "dev"
+
+datas = []
+binaries = []
+hiddenimports = []
+
+# Collect all from the flightpath package
+base_path = os.path.abspath('.')
+flightpath_path = os.path.join(base_path, 'flightpath')
+if os.path.exists(flightpath_path):
+    tmp_ret = collect_all(flightpath_path)
+    datas += tmp_ret[0]
+    binaries += tmp_ret[1]
+    hiddenimports += tmp_ret[2]
+
+# Add assets
+assets_path = os.path.join(base_path, 'flightpath', 'assets')
+if os.path.exists(assets_path):
+    datas.append((assets_path, 'assets'))
+
+# Icon path
+icon_path = os.path.join(assets_path, 'icons', 'icon.icns')
+
+a = Analysis(
+    [os.path.join(base_path, 'flightpath', 'main.py')],
+    pathex=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name='FlightPath Data',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    icon=icon_path if os.path.exists(icon_path) else None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='FlightPath Data',
+)
+
+app = BUNDLE(
+    coll,
+    name='FlightPath Data.app',
+    icon=icon_path if os.path.exists(icon_path) else None,
+    bundle_identifier='com.flightpathdata.flightpath',
+    info_plist={
+        'NSHumanReadableCopyright': 'Copyright 2025, CsvPath Maintainers; Atesta Analytics; David Kershaw',
+        'NSPrincipalClass': 'NSApplication',
+        'NSAppleScriptEnabled': False,
+        'CFBundleDisplayName': 'FlightPath Data',
+        'CFBundleExecutable': 'FlightPath Data',
+        'CFBundleIconFile': 'icon.icns',
+        'CFBundleIdentifier': 'com.flightpathdata.flightpath',
+        'CFBundleInfoDictionaryVersion': '6.0',
+        'CFBundleName': 'FlightPath Data',
+        'CFBundlePackageType': 'APPL',
+        'CFBundleVersion': build_number,
+        'LSApplicationCategoryType': 'public.app-category.developer-tools',
+        'LSRequiresNativeExecution': True,
+        'LSMinimumSystemVersion': '12.0.0',
+        'CFBundleShortVersionString': build_number,
+        'ITSAppUsesNonExemptEncryption': False,
+        'NSHighResolutionCapable': True
+    },
+)
+EOF
+
+        # Run PyInstaller
+        poetry run python -m PyInstaller \
+          --distpath "dist/macos" \
+          --workpath "build/macos" \
+          flightpath_ci.spec
+
+        # Check if build was successful
+        if [ -d "dist/macos/FlightPath Data.app" ]; then
+          echo "✅ macOS build successful"
+          ls -la "dist/macos/FlightPath Data.app"
+
+          # Optional: Create a zip of the app for easier artifact handling
+          cd dist/macos
+          zip -r "FlightPath Data.app.zip" "FlightPath Data.app"
+          cd ../..
+        else
+          echo "❌ macOS build failed"
+          ls -la dist/macos/
+          exit 1
+        fi
+
+    - name: Upload macOS app artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.APP_NAME }}-macos-${{ steps.get_version.outputs.version }}
+        path: source/dist/macos/FlightPath Data.app.zip
+        retention-days: 30
+
+    - name: Upload raw app bundle (alternative)
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.APP_NAME }}-macos-bundle-${{ steps.get_version.outputs.version }}
+        path: source/dist/macos/FlightPath Data.app/
+        retention-days: 30

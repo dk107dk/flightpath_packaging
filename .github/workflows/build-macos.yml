@@ -234,7 +234,8 @@ jobs:
 
           # Optional: Create a zip of the app for easier artifact handling
           cd dist/macos
-          zip -r "FlightPath Data.app.zip" "FlightPath Data.app"
+          #zip -r "FlightPath Data.app.zip" "FlightPath Data.app"
+          ditto -c -k --sequesterRsrc --keepParent "FlightPath Data.app" "FlightPath Data.app.zip"
           cd ../..
         else
           echo "❌ macOS build failed"

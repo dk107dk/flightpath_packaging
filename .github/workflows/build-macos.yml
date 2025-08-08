@@ -148,7 +148,7 @@ jobs:
             binaries += tmp_ret[1]
             hiddenimports += tmp_ret[2]
 
-        # Add common exclusions to reduce size
+        # Add common exclusions to reduce size (but keep essential ones)
         excludes = [
             'tkinter',
             'test',
@@ -157,17 +157,16 @@ jobs:
             'doctest',
             'pydoc',
             'sqlite3',
-            'xml',
-            'email',
-            'http',
-            'urllib',
-            'multiprocessing',
-            'concurrent',
-            'distutils',
-            'setuptools',
-            'pkg_resources',
+            'xml.etree',
+            'email.mime',
+            'http.server',
+            'urllib.request',
+            'multiprocessing.dummy',
             '_pytest',
             'pytest',
+            'IPython',
+            'jupyter',
+            'notebook',
         ]
 
         # Add assets
@@ -248,11 +247,16 @@ jobs:
         )
         SPEC_EOF
 
-        # Run PyInstaller
+        # Run PyInstaller with verbose output to see what's being included
         poetry run python -m PyInstaller \
           --distpath "dist/macos" \
           --workpath "build/macos" \
+          --log-level=INFO \
           flightpath_ci.spec
+
+        # List largest files in the build for debugging
+        echo "Largest files in the app bundle:"
+        find "dist/macos/FlightPath Data.app" -type f -exec ls -lh {} + | sort -k5 -hr | head -20
 
         # Check if build was successful
         if [ -d "dist/macos/FlightPath Data.app" ]; then

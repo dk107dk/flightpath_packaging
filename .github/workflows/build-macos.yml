@@ -50,6 +50,16 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: arm64
 
+    - name: Install system dependencies
+      run: |
+        # Install MySQL client library for mysqlclient Python package
+        brew install mysql-client pkg-config
+
+        # Set environment variables for mysqlclient compilation
+        echo "PKG_CONFIG_PATH=$(brew --prefix mysql-client)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+        echo "MYSQLCLIENT_CFLAGS=-I$(brew --prefix mysql-client)/include/mysql" >> $GITHUB_ENV
+        echo "MYSQLCLIENT_LDFLAGS=-L$(brew --prefix mysql-client)/lib -lmysqlclient" >> $GITHUB_ENV
+
     - name: Install and Configure Poetry
       run: |
         pipx install poetry
@@ -94,10 +104,17 @@ jobs:
         restore-keys: |
           poetry-macos-${{ runner.os }}-
 
+    - name: Overwrite poetry.lock (if exists)
+      run: |
+        if [ -f "$GITHUB_WORKSPACE/packaging/poetry.lock" ]; then
+          cp "$GITHUB_WORKSPACE/packaging/poetry.lock" "$GITHUB_WORKSPACE/source/poetry.lock"
+        fi
 
     - name: Install dependencies
       run: |
         cd source
+        # Try to install with pre-compiled wheels first
+        poetry run pip install --only-binary=mysqlclient mysqlclient || true
         poetry install
 
     - name: Build macOS app

@@ -2,7 +2,6 @@
 # run this script from ./packaging
 #
 echo -e '\nclearing...\n'
-rm -Rf ./build/*
 rm -Rf ./dist/*
 rm -Rf ./dmg/*
 rm -Rf ./pkg/*
@@ -19,18 +18,12 @@ rm -Rf ./tmp/*
 # the ID hash needs to be the developer's not the installer creator's ID
 #
 #poetry run pyinstaller ./FlightPath\ Data-no-codesign.spec
-
-. ./build_app.sh
-
+#. ./build_app.sh
 #
-#building runs CsvPath so the usual project stuff gets created
+# pull the most recent workflow artifact. we don't yet have this setup to
+# provide a good build number or etc.
 #
-rm -Rf ./transfers
-rm -Rf ./logs
-rm -Rf ./cache
-rm -Rf ./archive
-rm -Rf ./config
-rm -Rf ./inputs
+poetry run python pull_artifacts.py
 
 #
 # move to another dir. this was a Claude suggestion. make a difference? but doesn't hurt.
@@ -64,8 +57,8 @@ echo -e '\ncreating package...\n'
 echo -e '\nverifying .itmsp file with apple...\n'
 source ./transport_verify.sh
 
-echo -e '\ntransporting .itmsp file to apple...\n'
-source ./transport.sh
+echo -e '\nNOT transporting .itmsp file to apple...\n'
+#source ./transport.sh
 
 #
 # clean up to help prevent junk from going into git

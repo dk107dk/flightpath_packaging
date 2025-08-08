@@ -1,5 +1,7 @@
 import os
+import shutil
 import requests
+from zipfile import ZipFile
 
 #
 # setup vars and headers
@@ -12,7 +14,7 @@ GITHUB_TOKEN = None
 ARTIFACTS_EXPECTED = 1
 if not os.path.exists("./assets/github.token"):
     raise RuntimeError("No github token in github.token")
-with open("github.token", "r") as file:
+with open("./assets/github.token", "r") as file:
 	GITHUB_TOKEN = file.read().strip()
 DOWNLOAD_DIR = "dist"
 HEADERS = {
@@ -55,11 +57,32 @@ def download_artifact(artifact_id, filename):
     url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/actions/artifacts/{artifact_id}/zip"
     response = requests.get(url, headers=HEADERS, stream=True)
     response.raise_for_status()
-    with open(os.path.join(DOWNLOAD_DIR, filename), "wb") as f:
+    path = os.path.join(DOWNLOAD_DIR, filename)
+    with open(path, "wb") as f:
         for chunk in response.iter_content(chunk_size=8192):
             f.write(chunk)
+    with ZipFile(path, 'r') as zip_object:
+        zip_object.extractall(path=DOWNLOAD_DIR)
+    #
+    # unzip again because artifact zips a zip and the first zip
+    # collects the whole app, rather than the Contents. this
+    # results in a dir containing the app. we then move the app
+    # up a level to the dist dir. convoluted. :/
+    #
+    zippath = os.path.join(DOWNLOAD_DIR, "FlightPath Data.app.zip")
+    appdirpath = os.path.join(DOWNLOAD_DIR, "FlightPath Data_")
+    apppath = os.path.join(DOWNLOAD_DIR, "FlightPath Data.app")
+    with ZipFile(zippath, 'r') as zip_object:
+        zip_object.extractall(path=DOWNLOAD_DIR)
+
+    shutil.move(apppath, appdirpath)
+    os.chmod(f"{appdirpath}/Contents/MacOS/FlightPath Data", 0o755)
+    shutil.move(appdirpath, apppath)
+
 
 for a in artifacts["artifacts"]:
     download_artifact(a["id"], a["name"])
+
+
 
 print("✅ Done!")

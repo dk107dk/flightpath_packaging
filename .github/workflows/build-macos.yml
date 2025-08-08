@@ -94,11 +94,6 @@ jobs:
         restore-keys: |
           poetry-macos-${{ runner.os }}-
 
-    - name: Overwrite poetry.lock (if exists)
-      run: |
-        if [ -f "$GITHUB_WORKSPACE/packaging/poetry.lock" ]; then
-          cp "$GITHUB_WORKSPACE/packaging/poetry.lock" "$GITHUB_WORKSPACE/source/poetry.lock"
-        fi
 
     - name: Install dependencies
       run: |

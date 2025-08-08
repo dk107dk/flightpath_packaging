@@ -109,12 +109,7 @@ jobs:
         cd source
         # Try to install with pre-compiled wheels first
         poetry run pip install --only-binary=mysqlclient mysqlclient || true
-        # Install only production dependencies
-        poetry install --only=main
-
-    - name: Install UPX for compression
-      run: |
-        brew install upx
+        poetry install
 
     - name: Build macOS app
       run: |
@@ -148,27 +143,6 @@ jobs:
             binaries += tmp_ret[1]
             hiddenimports += tmp_ret[2]
 
-        # Add common exclusions to reduce size (but keep essential ones)
-        excludes = [
-            'tkinter',
-            'test',
-            'tests',
-            'unittest',
-            'doctest',
-            'pydoc',
-            'sqlite3',
-            'xml.etree',
-            'email.mime',
-            'http.server',
-            'urllib.request',
-            'multiprocessing.dummy',
-            '_pytest',
-            'pytest',
-            'IPython',
-            'jupyter',
-            'notebook',
-        ]
-
         # Add assets
         assets_path = os.path.join(base_path, 'flightpath', 'assets')
         if os.path.exists(assets_path):
@@ -186,7 +160,7 @@ jobs:
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
-            excludes=excludes,
+            excludes=[],
             noarchive=False,
             optimize=0,
         )
@@ -247,26 +221,16 @@ jobs:
         )
         SPEC_EOF
 
-        # Run PyInstaller with verbose output to see what's being included
+        # Run PyInstaller
         poetry run python -m PyInstaller \
           --distpath "dist/macos" \
           --workpath "build/macos" \
-          --log-level=INFO \
           flightpath_ci.spec
-
-        # List largest files in the build for debugging
-        echo "Largest files in the app bundle:"
-        find "dist/macos/FlightPath Data.app" -type f -exec ls -lh {} + | sort -k5 -hr | head -20
 
         # Check if build was successful
         if [ -d "dist/macos/FlightPath Data.app" ]; then
           echo "✅ macOS build successful"
-
-          # Show size information for debugging
-          echo "App bundle size:"
-          du -sh "dist/macos/FlightPath Data.app"
-          echo "Contents breakdown:"
-          du -sh "dist/macos/FlightPath Data.app"/* | head -20
+          ls -la "dist/macos/FlightPath Data.app"
 
           # Optional: Create a zip of the app for easier artifact handling
           cd dist/macos

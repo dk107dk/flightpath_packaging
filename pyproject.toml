@@ -13,6 +13,8 @@ darkdetect = "^0.8.0"
 csvpath = "^0.0.553"
 pyinstaller = "^6.15.0"
 requests = "^2.32.4"
+fastapi = "^0.115.13"
+uvicorn = "^0.34.3"
 
 [tool.poetry.scripts]
 #flightpath = "flightpath.main:run"

@@ -6,6 +6,7 @@ __pycache__/
 .DS_Store
 old/
 github.token
+github_token.txt
 aliases.sh
 
 # C extensions

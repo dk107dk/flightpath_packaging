@@ -1,0 +1,13 @@
+Id: dk107dk.FlightPathServer
+Publisher: CN=AtestaAnalytics
+Name: FlightPath Server
+Version: 0.0.1-alpha
+Channel: Stable
+License: MIT
+InstallerType: msix
+Installers:
+  - Architecture: arm64
+    InstallerUrl: https://github.com/dk107dk/flightpath_server/releases/download/v0.0.1-alpha/FlightPathServer-arm64-v0.0.1.msix
+    InstallerSha256: <INSERT_SHA256_HASH>
+ManifestType: singleton
+ManifestVersion: 1.4.0

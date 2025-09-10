@@ -1,0 +1,17 @@
+# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json
+
+PackageIdentifier: AtestaAnalytics.FlightPathServer
+PackageVersion: 1.1.15.0
+Platform:
+- Windows.Desktop
+MinimumOSVersion: 10.0.19041.0
+InstallerType: msix
+PackageFamilyName: AtestaAnalytics.FlightPathServer_8qr32sf8vb55a
+Installers:
+- Architecture: neutral
+  InstallerUrl: https://github.com/dk107dk/flightpath_server/releases/download/v0.0.1-alpha/FlightPathServer-arm64-test.msix
+  InstallerSha256: FF912D51AD04F7AB8293CB322914BDC130759DF744EBAADDFB811E457005AFA4
+  SignatureSha256: 06100C86C8CB41E881F593C24FAA4DD7A1B63C66FACB5AA267C50AE8FA6F6298
+ManifestType: installer
+ManifestVersion: 1.10.0

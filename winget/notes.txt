@@ -1,0 +1,35 @@
+
+
+
+Run wingetcreate:
+    winget cannot run against a local file. also when you run winget using a local manifest for testing winget 
+    must be able to download the installer from a URL. so we need a release in github before we can go forward.
+
+    wingetcreate.exe new https://github.com/dk107dk/flightpath_server/releases/download/v0.0.1-alpha/FlightPathServer-arm64-test.msix
+
+    the manifest is written here: 
+        C:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0    
+
+    validate it with: 
+        winget validate --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0
+    
+    test the install with:
+        winget install --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0    
+
+The identities in the MSIX and cert must match exactly.
+    certutil -dump assets\FlightPathCert.pfx
+
+Run 1x as admin to allow local manifest installs: 
+    winget settings --enable LocalManifestFiles
+
+Compute SHA256 in powershell: 
+    Get-FileHash .\FlightPathServer-arm64-v0.0.1.msix -Algorithm SHA256
+
+
+
+Github releases: 
+    - created manually
+    - need a test msix that is signed in order to test the installer and winget
+    
+    
+

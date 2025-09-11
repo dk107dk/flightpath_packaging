@@ -16,20 +16,42 @@ Run wingetcreate:
     test the install with:
         winget install --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0    
 
+    I was not able to get windows to accept the enable local manifests setting made in David used in the Python account. But it worked fine in the David account.
+
+    The test installer and manifest installs the server to: 
+	C:\Program Files\WindowsApps\AtestaAnalytics.FlightPathServer_1.1.15.0_neutral__8qr32sf8vb55a
+    to run do: 
+    	"c:\Program Files\WindowsApps\AtestaAnalytics.FlightPathServer_1.1.15.0_neutral__8qr32sf8vb55a\FlightPathServer.exe"
+    	
+
 The identities in the MSIX and cert must match exactly.
     certutil -dump assets\FlightPathCert.pfx
+
 
 Run 1x as admin to allow local manifest installs: 
     winget settings --enable LocalManifestFiles
 
+
 Compute SHA256 in powershell: 
     Get-FileHash .\FlightPathServer-arm64-v0.0.1.msix -Algorithm SHA256
-
 
 
 Github releases: 
     - created manually
     - need a test msix that is signed in order to test the installer and winget
     
-    
+
+Key wrangling... This could work, but it had issues the one time I tried. The easier thing to do is to install the cert by double-clicking, installing into Local Machine, and the Trusted People store.
+	If you haven’t already, extract the .cer file:
+		$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+		$cert.Import("FlightPathCert.pfx", "hangzhou", "Exportable,PersistKeySet")	
+		$bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)	
+		[System.IO.File]::WriteAllBytes("FlightPathCert.cer", $bytes)
+		
+	Install it into Trusted People
+		Run this in an elevated PowerShell session:
+			Import-Certificate -FilePath "FlightPathCert.cer" -CertStoreLocation "Cert:\LocalMachine\TrustedPeople"
+
+
+
 

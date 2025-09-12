@@ -2,8 +2,10 @@
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
          xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+         xmlns:uap8="http://schemas.microsoft.com/appx/manifest/uap/windows10/8"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-         IgnorableNamespaces="uap rescap">
+         IgnorableNamespaces="uap rescap"
+  >
   <Identity Name="AtestaAnalytics.FlightPathServer"
             Publisher="CN=E95957FE-6131-4006-B006-8B5BDB2B3037"
             Version="1.1.15.0"
@@ -36,15 +38,18 @@
                           Square44x44Logo="logo44x44.png"
                           Description="A DataOps tabular data processing server"
                           BackgroundColor="transparent"/>
+
+        <Extensions>
+          <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication">
+            <uap3:AppExecutionAlias>
+              <uap8:ExecutionAlias Alias="FlightPathServer.exe" />
+            </uap3:AppExecutionAlias>
+          </uap3:Extension>
+        </Extensions>  
+
+
     </Application>
   </Applications>
   
-<Extensions>
-  <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication">
-    <uap3:AppExecutionAlias>
-      <uap3:Alias Name="FlightPathServer.exe" />
-    </uap3:AppExecutionAlias>
-  </uap3:Extension>
-</Extensions>  
   
 </Package>

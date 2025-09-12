@@ -1,0 +1,25 @@
+{"asctime": "2025-09-11 19:31:14,928", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\python/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:31:14,931", "levelname": "WARNING", "threadName": "MainThread", "module": "app_config", "message": "Unknown config: [security] ssl_keyfile_password"}
+{"asctime": "2025-09-11 19:31:14,931", "levelname": "WARNING", "threadName": "MainThread", "module": "app_config", "message": "Unknown config: [security] ssl_keyfile_password"}
+{"asctime": "2025-09-11 19:31:14,964", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\python/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:31:14,964", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\python/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:31:14,964", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\python/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:31:14,965", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:31:14,965", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:31:14,965", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:31:14,965", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:31:19,969", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Shutting down FlightPath Server"}
+{"asctime": "2025-09-11 19:31:19,969", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Shutting down FlightPath Server"}
+{"asctime": "2025-09-11 19:31:19,969", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Shutting down FlightPath Server"}
+{"asctime": "2025-09-11 19:31:19,969", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Shutting down FlightPath Server"}
+{"asctime": "2025-09-11 19:34:06,469", "levelname": "WARNING", "threadName": "MainThread", "module": "app_config", "message": "There is no config file at C:\\Users\\David/FlightPathServer/config/app_config.ini. Creating a default."}
+{"asctime": "2025-09-11 19:34:06,472", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\David/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:34:06,479", "levelname": "WARNING", "threadName": "MainThread", "module": "app_config", "message": "Unknown config: [security] ssl_keyfile_password"}
+{"asctime": "2025-09-11 19:34:06,479", "levelname": "WARNING", "threadName": "MainThread", "module": "app_config", "message": "Unknown config: [security] ssl_keyfile_password"}
+{"asctime": "2025-09-11 19:34:06,503", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\David/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:34:06,503", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\David/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:34:06,503", "levelname": "INFO", "threadName": "MainThread", "module": "app_config", "message": "FlightPath Server: loading config at C:\\Users\\David/FlightPathServer/config/app_config.ini"}
+{"asctime": "2025-09-11 19:34:06,504", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:34:06,504", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:34:06,504", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}
+{"asctime": "2025-09-11 19:34:06,504", "levelname": "INFO", "threadName": "MainThread", "module": "lifespan", "message": "Starting"}

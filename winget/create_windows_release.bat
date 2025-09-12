@@ -17,3 +17,5 @@ C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.26100.0\arm64\makeappx pack 
 copy /Y assets\test_manifest\AppxManifest.xml dist\FlightPathServer\AppxManifest.xml
 
 C:\"Program Files (x86)"\"Windows Kits"\10\bin\10.0.26100.0\arm64\makeappx pack /d dist\FlightPathServer /p dist\FlightPathServer-arm64-test.msix
+
+call sign.bat

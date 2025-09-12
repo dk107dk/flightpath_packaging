@@ -11,7 +11,7 @@ PackageFamilyName: AtestaAnalytics.FlightPathServer_8qr32sf8vb55a
 Installers:
 - Architecture: neutral
   InstallerUrl: https://github.com/dk107dk/flightpath_server/releases/download/v0.0.1-alpha/FlightPathServer-arm64-test.msix
-  InstallerSha256: FF912D51AD04F7AB8293CB322914BDC130759DF744EBAADDFB811E457005AFA4
-  SignatureSha256: 06100C86C8CB41E881F593C24FAA4DD7A1B63C66FACB5AA267C50AE8FA6F6298
+  InstallerSha256: FE686E542E978A31B3E69D9F4F9EB644B04926D75489A13631634F543A6D79B2
+  SignatureSha256: 7AED518CD247F8B90219383104E9B9214D3DE7DC7EF400042AB8CA1614215047
 ManifestType: installer
 ManifestVersion: 1.10.0

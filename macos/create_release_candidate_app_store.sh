@@ -38,7 +38,7 @@ mkdir tmp
 cp -R ./dist/FlightPath\ Data.app ./tmp/FlightPath\ Data.app
 
 #
-# codesign and validtion. code signing can be done by pyinstaller, but we (may) need
+# codesign and validtion. pyinstaller builds can be codesigned, but we (may) need
 # the force and deep flags
 #
 . ./codesign_app_for_store.sh

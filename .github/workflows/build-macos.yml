@@ -132,7 +132,11 @@ jobs:
 
         datas = []
         binaries = []
-        hiddenimports = ['paramiko', 'boto3', 'botocore', 'azure.storage.blob', 'google.cloud.storage']
+        hiddenimports = [
+          'paramiko', 'boto3', 'botocore', 'azure.storage.blob', 'google.cloud.storage',
+          'smart_open.sftp', 'smart_open.s3', 'smart_open.azure', 'smart_open.gcs',
+          'smart_open.ssh', 'smart_open.webhdfs'
+        ]
         # Collect all from the flightpath package
         base_path = os.path.abspath('.')
         flightpath_path = os.path.join(base_path, 'flightpath')

@@ -13,6 +13,7 @@ macos/dist
 macos/pkg
 macos/build
 macos/6745823097
+macos/6745823097.itmsp
 
 # C extensions
 *.so

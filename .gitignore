@@ -8,6 +8,11 @@ old/
 github.token
 github_token.txt
 aliases.sh
+macos/tmp
+macos/dist
+macos/pkg
+macos/build
+macos/6745823097
 
 # C extensions
 *.so

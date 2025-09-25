@@ -60,12 +60,14 @@ echo -e '\nverifying .itmsp file with apple...\n'
 . ./transport_verify.sh
 
 echo -e '\ntransporting .itmsp file to apple...\n'
-. ./transport.sh
+echo -e 'TRANSPORT IS SWITCHED OFF FOR TESTING!'
+#. ./transport.sh
 
 #
-# clean up to help prevent junk hanging around, going into git
+# clean up to help prevent junk from going into git
 #
 #cd ..
-. ./cleaner.sh
+#. ./cleaner.sh
+echo -e 'CLEANER IS SWITCHED OFF FOR TESTING!'
 
 

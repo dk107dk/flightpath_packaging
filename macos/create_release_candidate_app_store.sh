@@ -66,6 +66,6 @@ echo -e '\ntransporting .itmsp file to apple...\n'
 # clean up to help prevent junk hanging around, going into git
 #
 #cd ..
-. ./cleaner.sh
+#. ./cleaner.sh
 
 

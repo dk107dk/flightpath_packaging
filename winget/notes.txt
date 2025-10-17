@@ -13,10 +13,10 @@ Run wingetcreate:
         C:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0    
 
     validate it with: 
-        winget validate --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0
+        winget validate --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\0.0.1-alpha
     
     test the install with:
-        winget install --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\1.1.15.0    
+        winget install --manifest c:\dev\flightpath_packaging\winget\manifests\a\AtestaAnalytics\FlightPathServer\0.0.1-alpha    
 
     I was not able to get windows to accept the enable local manifests setting made in David used in the Python account. But it worked fine in the David account.
 

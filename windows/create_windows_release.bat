@@ -12,6 +12,7 @@
 mkdir dist\FlightPathData
 
 copy dist\FlightPathData.exe dist\FlightPathData
+copy dist\FlightPathServer.exe dist\FlightPathData
 copy assets\AppxManifestProd\AppxManifest.xml dist\FlightPathData
 copy assets\logo44x44.png dist\FlightPathData
 copy assets\logo150x150.png dist\FlightPathData

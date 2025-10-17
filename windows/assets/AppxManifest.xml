@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
          xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+         xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+         xmlns:uap8="http://schemas.microsoft.com/appx/manifest/uap/windows10/8"
          xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-         IgnorableNamespaces="uap rescap">
+         IgnorableNamespaces="uap uap3 uap8 rescap"
+  >
   <Identity Name="FlightPathData"
             Publisher="CN=AtestaAnalytics"
             Version="1.1.15.0" 
@@ -22,19 +25,36 @@
   </Resources>
   <Capabilities>
     <Capability Name="internetClient" />
+    <Capability Name="internetClientServer" />
     <uap:Capability Name="documentsLibrary" />
     <uap:Capability Name="removableStorage" />
     <rescap:Capability Name="runFullTrust" /> 
   </Capabilities>
   <Applications>
-    <Application Id="App"
+       <Application Id="App"
                  Executable="FlightPathData.exe"
                  EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="FlightPath Data"
+            <uap:VisualElements DisplayName="FlightPath Data"
                           Square150x150Logo="logo150x150.png"
                           Square44x44Logo="logo44x44.png"
                           Description="A DataOps data processing application"
                           BackgroundColor="transparent"/>
-    </Application>
+      </Application>    
+      <Application Id="Server"
+               Executable="FlightPathServer.exe"
+               EntryPoint="Windows.FullTrustApplication">
+            <uap:VisualElements DisplayName="FlightPath Server"
+                        Square150x150Logo="logo150x150.png"
+                        Square44x44Logo="logo44x44.png"
+                        Description="A DataOps data ingestion server"
+                        BackgroundColor="transparent"/>
+            <!--Extensions>
+                <uap3:Extension Category="windows.appExecutionAlias" EntryPoint="Windows.FullTrustApplication">
+                    <uap3:AppExecutionAlias>
+                        <uap8:ExecutionAlias Alias="FlightPathServer.exe" />
+                    </uap3:AppExecutionAlias>
+                </uap3:Extension>
+            </Extensions-->
+        </Application>
   </Applications>
 </Package>

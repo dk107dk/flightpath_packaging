@@ -1,0 +1,12 @@
+# Created using wingetcreate 1.10.3.0
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json
+
+PackageIdentifier: AtestaAnalytics.FlightPathServer
+PackageVersion: 0.0.1-alpha
+PackageLocale: en-US
+Publisher: Atesta Analytics
+PackageName: FlightPath Server
+License: LGPL
+ShortDescription: An API for data ingestion using CsvPath Framework
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

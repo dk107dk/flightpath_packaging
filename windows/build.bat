@@ -10,6 +10,7 @@ cd ..\..\flightpath\tmp
 poetry run pyinstaller FlightPath-Data-windows.spec
 
 move dist\FlightPathData.exe ..\..\flightpath_packaging\windows\dist
+move dist\FlightPathServer.exe ..\..\flightpath_packaging\windows\dist
 
 cd ..\..\flightpath_packaging\windows
 

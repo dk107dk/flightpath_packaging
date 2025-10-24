@@ -4,24 +4,37 @@ This dir has everything to build and ship a .exe to the Microsoft Store.
 
 ## Building
 
-Create an installer by running create_windows_release.ps1 in a Powershell terminal 
-started as administrator. 
-
-create_windows_release.ps1 builds the app by executing build.bat.  build.bat updates 
-c:\dev\flightpath by pulling from Git and doing Poetry update. It then runs a Pyinstaller script in 
-a tmp dir in the flightpath repo. The exe is moved to the dist dir here.
-
-If you don't use build.bat, remember to git pull and poetry update in c:\dev\flightpath. PyInstaller 
-only builds what it finds, it does not prep the codebase in any way.
-
-## Testing
-
-Use the installer test VM for testing. It has the correct cert loaded and is otherwise plain vanella. 
-The msix is too big to copy or run -- ~200mb. Get it to the machine via Google Drive. 
+The app is built locally by build.bat running a Pyinstaller script in a tmp dir in the flightpath repo. The exe is moved to the dist dir here.
 
 ## Shipping
 
-This script builds the exes and packages them as an .msix. It creates a test .msix that 
-is signed and the prod .msix that is unsigned. Upload the prod .msix into the Store submission.
-Microsoft will sign the prod .msix as part of their process.
+Prepare to upload to a developer submission by running create\_windows\_release.ps1 in a Powershell terminal start as administrator. This script builds the exe and packages it as an .msix. It creates a test .msix that is signed and the prod .msix that is unsigned. Upload the prod .msix into the Store submission.
+
+
+## Steps
+WINDOWS RELEASES:
+
+Use build.sh and aliases.sh where present.
+
+1.  Do a release.sh of CsvPath
+2.  Update FlightPath Server to the new CsvPath
+3.  Update the FlightPath Server version and do a build.sh
+4.  Run server unit tests and test manually from Server repo using RapidAPI and FlightPath
+5.  Update the FlightPath Data version in pyproject and flightpath/assets/build_number.txt
+6.  Do build.sh and make sure to commit the flightpath_server wheel to assets
+7.  Update the AppxManifest version numbers to match flightpath/flightpath/assets/build_number.txt
+8.  Run the test installer build in flightpath_packaging/windows
+9.  Test the installer on installer test vm as the david user
+    - Server API calls
+    - Use of FlightPath Data
+    - Use of FlightPath Data with OTLP and backend configured
+10. - do a prod installer build
+11. - Rename installers to include version number
+11. - Copy prod and test installers to google drive versions dir
+12. - Upload prod to Microsoft, update submission, and submit
+13. - Publish after submission accepted
+14. - Test install from store
+
+
+
 

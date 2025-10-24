@@ -1,3 +1,9 @@
+cd ..\..\flightpath
+git pull
+poetry update
+
+cd ..\flightpath_packaging\windows
+
 RD /S /Q .\dist
 mkdir .\dist
 
@@ -14,4 +20,4 @@ move dist\FlightPathServer.exe ..\..\flightpath_packaging\windows\dist
 
 cd ..\..\flightpath_packaging\windows
 
-RD /S /Q ..\..\flightpath\tmp
+:: RD /S /Q ..\..\flightpath\tmp

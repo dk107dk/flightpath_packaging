@@ -31,6 +31,7 @@ Use build.sh and aliases.sh where present.
 10. - do a prod installer build
 11. - Rename installers to include version number
 11. - Copy prod and test installers to google drive versions dir
+12. - Test installer on EC2 instance. Use test_assets/key.pem to start server and login.
 12. - Upload prod to Microsoft, update submission, and submit
 13. - Publish after submission accepted
 14. - Test install from store

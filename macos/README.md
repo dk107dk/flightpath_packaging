@@ -1,5 +1,3 @@
-
-
 # MacOS build and ship
 
 This dir has everything to build and ship a .app to the Mac App Store.

@@ -121,7 +121,15 @@ jobs:
         # -*- mode: python ; coding: utf-8 -*-
         from PyInstaller.utils.hooks import collect_all
         import os
+        #
+        # exp!
+        #
+        from PyInstaller.utils.hooks import collect_data_files
+        datas = collect_data_files('litellm')
 
+
+        #
+        #
         # Read build number
         build_number = None
         if os.path.exists("build_number.txt"):
@@ -130,7 +138,7 @@ jobs:
         else:
             build_number = "dev"
 
-        datas = []
+        #datas = []
         binaries = []
         hiddenimports = [
           'paramiko', 'boto3', 'botocore', 'azure.storage.blob', 'google.cloud.storage',

@@ -14,7 +14,7 @@ Ship to the developer submission by running create_release_candidate_app_store.s
 
 MACOS RELEASES:
 
-Use build.sh and aliases.sh where present.
+Use build.sh and aliases.sh where present. Build screts are in ../aliases.sh. Use: . ../aliases.sh
 
 1.  Do a release of CsvPath
 2.  Update FlightPath Server to the new CsvPath

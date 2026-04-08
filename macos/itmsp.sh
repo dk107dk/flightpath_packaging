@@ -1,7 +1,10 @@
+echo -e '\nStarting itmsp.sh to create itmsp wrapper for package...\n'
+echo -e "using the following vars: "
+echo -e "  none"
+
 #
 # Step: prep itmsp file
 #
-echo -e '\nprepping .itmsp file for update metadata.xml\n'
 rm -Rf 6745823097
 rm -Rf 6745823097.itmsp
 mkdir clean_itmsp

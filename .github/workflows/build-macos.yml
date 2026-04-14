@@ -67,6 +67,8 @@ jobs:
         cd source
         poetry config virtualenvs.create true
         poetry config virtualenvs.in-project true
+        # added to fix v12 problem
+        poetry env use $(which python)
 
     - name: Get version from source
       id: get_version

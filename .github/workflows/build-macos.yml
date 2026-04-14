@@ -112,6 +112,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd source
+        poetry env use $(which python)
         # Try to install with pre-compiled wheels first
         poetry run pip install --only-binary=mysqlclient mysqlclient || true
         poetry install

@@ -65,7 +65,8 @@ jobs:
 
     - name: Install and Configure Poetry
       run: |
-        pipx install poetry
+        #pipx install poetry
+        pipx install poetry --python $(which python)
         poetry --version
         cd source
         poetry config virtualenvs.create true

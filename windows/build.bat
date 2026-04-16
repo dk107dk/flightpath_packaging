@@ -1,6 +1,7 @@
 cd ..\..\flightpath
 git pull
-poetry update
+poetry lock
+poetry sync
 
 cd ..\flightpath_packaging\windows
 

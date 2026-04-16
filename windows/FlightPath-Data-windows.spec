@@ -1,7 +1,7 @@
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 import os
 
-base_path = os.path.abspath('.')
+base_path = os.path.abspath('..')
 flightpath_path = os.path.join(base_path, 'flightpath')
 
 datas = []
@@ -44,7 +44,7 @@ datas += collect_data_files('litellm')
 icon_path = os.path.join(assets_path, 'icons', 'icon.ico')  # .ico not .icns
 
 a = Analysis(
-    ['flightpath/main.py'],
+    ['../flightpath/main.py'],
     pathex=[],
     binaries=binaries,
     datas=datas,
@@ -69,8 +69,8 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
-    icon=os.path.abspath('flightpath/assets/icons/icon.ico'),
+    icon=os.path.abspath('../flightpath/assets/icons/icon.ico'),
 )
 

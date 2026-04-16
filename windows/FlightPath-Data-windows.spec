@@ -73,4 +73,44 @@ exe = EXE(
     disable_windowed_traceback=False,
     icon=os.path.abspath('../flightpath/assets/icons/icon.ico'),
 )
+#
+#
+print("\n\n=============== SERVER =================\n\n")
+#
+a = Analysis(
+    ['../flightpath/server.py'],
+    pathex=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='FlightPathServer',
+    debug=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    icon=os.path.abspath('../flightpath/assets/icons/icon.ico'),
+)
+
+
+
+
+
 

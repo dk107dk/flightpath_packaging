@@ -2,13 +2,19 @@
 
 This dir has everything to build and ship a .exe to the Microsoft Store.
 
+## driver script
+
+For most cases, just run create_windows_release.ps1. That script calls build.bat, etc. to create a test package and the msix for the Microsoft Store.
+
+If you have a certificate issue and need to create a new cert, just run create_cert.ps1. The installer build will use the assets\FlightPathCert.pfx. You'll install the new cert on the test machine as a root CA cert. After doing that, the msix should install.
+
 ## Building
 
-The app is built locally by build.bat running a Pyinstaller script in a tmp dir in the flightpath repo. The exe is moved to the dist dir here.
+You must pull the flightpath repo before building an installer. Installers are created by build.bat running a Pyinstaller script in a tmp dir in the flightpath repo. The Data and Server exes are moved to the dist dir here.
 
 ## Shipping
 
-Prepare to upload to a developer submission by running create\_windows\_release.ps1 in a Powershell terminal start as administrator. This script builds the exe and packages it as an .msix. It creates a test .msix that is signed and the prod .msix that is unsigned. Upload the prod .msix into the Store submission.
+Prepare to upload to a developer submission by running create_windows_release.ps1 in a Powershell terminal started as administrator. This script builds the exe and packages it as an .msix. It creates a test .msix that is signed and the prod .msix that is unsigned. Upload the prod .msix into the Store submission.
 
 
 ## Steps

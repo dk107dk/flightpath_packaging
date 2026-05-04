@@ -15,6 +15,13 @@ if os.path.exists(flightpath_path):
     binaries += tmp_ret[1]
     hiddenimports += tmp_ret[2]
 
+    tmp_ret = collect_all("flightpath_generator")
+    datas += tmp_ret[0]
+    binaries += tmp_ret[1]
+    hiddenimports += tmp_ret[2]
+
+hiddenimports += ['tiktoken_ext.openai_public', 'tiktoken_ext']
+
 # Explicitly add assets (may be redundant after collect_all, but be explicit)
 assets_path = os.path.join(base_path, 'flightpath', 'assets')
 
@@ -28,18 +35,8 @@ if os.path.exists(assets_path):
 print("=== DATAS BEFORE LiteLLM ===")
 print(f"   {len(datas)} datas found")
 
-
 # litellm data — extend, don't overwrite
 datas += collect_data_files('litellm')
-
-
-
-
-
-
-
-
-
 
 icon_path = os.path.join(assets_path, 'icons', 'icon.ico')  # .ico not .icns
 

@@ -42,6 +42,44 @@ hiddenimports += [
     'paramiko.ecdsakey', 
     # cryptography backend that paramiko pulls in 
     'cryptography.hazmat.primitives.asymmetric.ed25519', 
+    # S3 — boto3/botocore
+    'boto3',
+    'boto3.session',
+    'botocore',
+    'botocore.session',
+    'botocore.credentials',
+    'botocore.regions',
+    'botocore.loaders',
+    'botocore.parsers',
+    'botocore.serialize',
+    'botocore.signers',
+    's3transfer',
+    's3transfer.futures',
+    's3transfer.manager',
+    # Azure Blob Storage
+    'azure',
+    'azure.storage',
+    'azure.storage.blob',
+    'azure.storage.blob._blob_client',
+    'azure.storage.blob._container_client',
+    'azure.core',
+    'azure.core.credentials',
+    'azure.core.pipeline',
+    'azure.core.pipeline.transport',
+    'azure.identity',
+    # Google Cloud Storage
+    'google.cloud.storage',
+    'google.cloud.storage.client',
+    'google.cloud.storage.blob',
+    'google.cloud.storage.bucket',
+    'google.auth',
+    'google.auth.credentials',
+    'google.auth.transport',
+    'google.auth.transport.requests',
+    'google.oauth2',
+    'google.oauth2.credentials',
+    'google.oauth2.service_account',
+    
 ]
 
 hiddenimports += ['tiktoken_ext.openai_public', 'tiktoken_ext']
@@ -64,9 +102,6 @@ hiddenimports += chiddenimports
 
 
 icon_path = os.path.join(assets_path, 'icons', 'icon.ico')  # .ico not .icns
-
-
-
 
 
 a = Analysis(
@@ -95,7 +130,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     icon=os.path.abspath('../flightpath/assets/icons/icon.ico'),
 )

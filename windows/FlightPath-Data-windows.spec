@@ -3,42 +3,71 @@ import os
 
 base_path = os.path.abspath('..')
 flightpath_path = os.path.join(base_path, 'flightpath')
+print(f"flightpath_path: {flightpath_path}")
 
 datas = []
 binaries = []
 hiddenimports = []
 
-# Mirror the Mac approach — collect_all on the whole package first
-if os.path.exists(flightpath_path):
-    tmp_ret = collect_all("flightpath")
-    datas += tmp_ret[0]
-    binaries += tmp_ret[1]
-    hiddenimports += tmp_ret[2]
+tmp_ret = collect_all("flightpath")
+datas += tmp_ret[0]
+binaries += tmp_ret[1]
+hiddenimports += tmp_ret[2]
 
-    tmp_ret = collect_all("flightpath_generator")
-    datas += tmp_ret[0]
-    binaries += tmp_ret[1]
-    hiddenimports += tmp_ret[2]
+tmp_ret = collect_all("flightpath_generator")
+gdatas = tmp_ret[0]
+gbinaries = tmp_ret[1]
+ghiddenimports = tmp_ret[2]
+
+tmp_ret = collect_all("smart_open")
+cdatas = tmp_ret[0]
+cbinaries = tmp_ret[1]
+chiddenimports = tmp_ret[2]
+
+hiddenimports += [ 
+    # smart-open core 
+    'smart_open', 
+    'smart_open.ssh',
+    # the SFTP/SSH transport 
+    'smart_open.local_file', 
+    'smart_open.http', 
+    'smart_open.compression', 
+    # Paramiko (SFTP underlying library) 
+    'paramiko', 
+    'paramiko.transport', 
+    'paramiko.sftp_client', 
+    'paramiko.sftp_file', 
+    'paramiko.auth_handler', 
+    'paramiko.ed25519key', 
+    'paramiko.ecdsakey', 
+    # cryptography backend that paramiko pulls in 
+    'cryptography.hazmat.primitives.asymmetric.ed25519', 
+]
 
 hiddenimports += ['tiktoken_ext.openai_public', 'tiktoken_ext']
 
-# Explicitly add assets (may be redundant after collect_all, but be explicit)
 assets_path = os.path.join(base_path, 'flightpath', 'assets')
-
-print(f"Assets path: {assets_path}")
-print(f"Assets exists: {os.path.exists(assets_path)}")
 
 if os.path.exists(assets_path):
     datas.append((assets_path, 'assets'))
     print(f"Datas after append: {datas[-1]}")
 
-print("=== DATAS BEFORE LiteLLM ===")
-print(f"   {len(datas)} datas found")
-
 # litellm data — extend, don't overwrite
 datas += collect_data_files('litellm')
 
+datas += gdatas
+binaries += gbinaries
+hiddenimports += ghiddenimports
+datas += cdatas
+binaries += cbinaries
+hiddenimports += chiddenimports
+
+
 icon_path = os.path.join(assets_path, 'icons', 'icon.ico')  # .ico not .icns
+
+
+
+
 
 a = Analysis(
     ['../flightpath/main.py'],
@@ -66,7 +95,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     icon=os.path.abspath('../flightpath/assets/icons/icon.ico'),
 )

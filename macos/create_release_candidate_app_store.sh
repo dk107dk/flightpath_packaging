@@ -53,6 +53,6 @@ cp -R ./dist/FlightPath\ Data.app ./tmp/FlightPath\ Data.app
 #
 # clean up to help prevent junk hanging around, going into git
 #
-. ./cleaner.sh
+#. ./cleaner.sh
 
 

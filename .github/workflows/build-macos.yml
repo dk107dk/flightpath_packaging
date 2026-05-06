@@ -133,7 +133,6 @@ jobs:
         from PyInstaller.utils.hooks import collect_data_files
         datas = collect_data_files('litellm')
 
-
         #
         #
         # Read build number
@@ -151,7 +150,10 @@ jobs:
           'smart_open.sftp', 'smart_open.s3', 'smart_open.azure', 'smart_open.gcs',
           'smart_open.ssh', 'smart_open.webhdfs'
         ]
+        #
         # Collect all from the flightpath package
+        # i don't remember why we would need to check for the path. seems unhelpful, but not a problem.
+        #
         base_path = os.path.abspath('.')
         flightpath_path = os.path.join(base_path, 'flightpath')
         if os.path.exists(flightpath_path):
@@ -159,6 +161,70 @@ jobs:
             datas += tmp_ret[0]
             binaries += tmp_ret[1]
             hiddenimports += tmp_ret[2]
+
+            tmp_ret = collect_all("flightpath_generator")
+            datas += tmp_ret[0]
+            binaries += tmp_ret[1]
+            hiddenimports += tmp_ret[2]
+
+            tmp_ret = collect_all("smart_open")
+            datas += tmp_ret[0]
+            binaries += tmp_ret[1]
+            hiddenimports += tmp_ret[2]
+
+
+            hiddenimports += [
+                'smart_open',
+                'smart_open.ssh',
+                'smart_open.local_file',
+                'smart_open.http',
+                'smart_open.compression',
+                'paramiko',
+                'paramiko.transport',
+                'paramiko.sftp_client',
+                'paramiko.sftp_file',
+                'paramiko.auth_handler',
+                'paramiko.ed25519key',
+                'paramiko.ecdsakey',
+                'cryptography.hazmat.primitives.asymmetric.ed25519',
+                'boto3',
+                'boto3.session',
+                'botocore',
+                'botocore.session',
+                'botocore.credentials',
+                'botocore.regions',
+                'botocore.loaders',
+                'botocore.parsers',
+                'botocore.serialize',
+                'botocore.signers',
+                's3transfer',
+                's3transfer.futures',
+                's3transfer.manager',
+                'azure',
+                'azure.storage',
+                'azure.storage.blob',
+                'azure.storage.blob._blob_client',
+                'azure.storage.blob._container_client',
+                'azure.core',
+                'azure.core.credentials',
+                'azure.core.pipeline',
+                'azure.core.pipeline.transport',
+                'azure.identity',
+                'google.cloud.storage',
+                'google.cloud.storage.client',
+                'google.cloud.storage.blob',
+                'google.cloud.storage.bucket',
+                'google.auth',
+                'google.auth.credentials',
+                'google.auth.transport',
+                'google.auth.transport.requests',
+                'google.oauth2',
+                'google.oauth2.credentials',
+                'google.oauth2.service_account',
+            ]
+            hiddenimports += ['tiktoken_ext.openai_public', 'tiktoken_ext']
+            datas += collect_data_files('litellm')
+
 
         # Add assets
         assets_path = os.path.join(base_path, 'flightpath', 'assets')
